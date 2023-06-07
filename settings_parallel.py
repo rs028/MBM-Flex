@@ -191,7 +191,7 @@ def parallel_room_integrations(iroom,ichem_only,temp,rel_humidity,M,AER,light_ty
     #"""
     #Integration
     #"""
-    #dt = 150                        # Time between outputs (s), simulation may fail if this is too large
+    #dt = 150                        # Time between outputs (s), simulation may fail if this is too large 
                                      # also used as max_step for the scipy.integrate.ode integrator
     #t0 = 0                          # time of day, in seconds from midnight, to start the simulation
     #seconds_to_integrate = 86400    # how long to run the model in seconds (86400*3 will run 3 days)
