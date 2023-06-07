@@ -32,7 +32,7 @@
 \newcommand{\eg}{e.\,g..}
 \DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}}
 
-\title{Indoor Chemical Model (INCHEM-Py v1.1) \\
+\title{Indoor Chemical Model (INCHEM-Py v1.1.1) \\
 User Manual\\
 \begin{figure}
     \hspace{-0.25\textwidth}\hspace{0.25in}
@@ -387,6 +387,10 @@ The string file name of the text file containing the initial species concentrati
 \texttt{True or False}\\
 Set as False to not include additional emissions and True to include additional emissions. Emissions can be added at specific points in time during the simulation. The times and emission rates are set using timed\_inputs.
 
+When using timed emissions it's suggested that the start time and end times are divisible by dt
+and that (start time - end time) is larger then 2*dt to avoid the integrator skipping any 
+emissions over small periods of time.
+
 \index{timed\_inputs}\marginlabel{timed\_inputs}
 \texttt{\{"species":[[start time, end time, rate]],\\
           "species2":[[start time, end time, rate],[start time, end time, rate]]\}}\\
@@ -662,6 +666,8 @@ The default integrator arguments set within INCHEM-Py are as follows:
     The size of the first integration step to try (s).
     \item \texttt{nsteps = 5000}\\
     The maximum number of internal time steps allowed.
+    \item \texttt{max\_step = dt}\\
+    Implemented to force the integrator to recheck any calculated values every dt seconds. Can be removed to speed up integration if timed emissions is False and indoor lights are constant as on or off.
 \end{itemize}
 
 \marginlabel{return code}\index{return code}
@@ -880,6 +886,8 @@ A single species can be input at multiple times as:
 \begin{verbatim}
 timed_inputs = {"LIMONENE":[[36720,37320,5e8],[39000,39400,5e8]]} 
 \end{verbatim}
+
+If the settings for the start time, end time, and dt are incompatible then the integrator can skip the emissions entirely. I.e. if the start time is indivisible by dt then the integrator could potentially miss the start of the emission and only pick it up when dt falls within the emission. If the emission is shorter than dt then the integrator may calculate the previous emission value as 0 and the next emission value as 0 and skip over the current value. Suggested values to negate this are given in the settings file.
 
 \clearpage
 \begin{figure}[h!]

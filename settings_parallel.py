@@ -143,7 +143,7 @@ def parallel_room_integrations(iroom,ichem_only,temp,rel_humidity,M,AER,light_ty
     # To change any surface deposition rates of individual species, or to add species
     # this file must be edited. Production rates can be added as normal reactions
     # in the custom inputs file. To remove surface deposition HMIX can be set to 0.
-    # HMIX is the surface to volume ratio
+    # HMIX is the surface to volume ratio (cm^-1)
     #HMIX = 0.02 #0.01776
 
 
@@ -173,6 +173,10 @@ def parallel_room_integrations(iroom,ichem_only,temp,rel_humidity,M,AER,light_ty
     ## at a specific point in time during the integration? If so then this needs to be set to True
     ## and the dictionary called timed_inputs (below) needs to be populated
 
+    # When using timed emissions it's suggested that the start time and end times are divisible by dt
+    # and that (start time - end time) is larger then 2*dt to avoid the integrator skipping any 
+    # emissions over small periods of time.
+
     ## the dictionary should be populated as
     ## timed_inputs = {species1:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]],
     ##                 species2:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]]}
@@ -187,7 +191,8 @@ def parallel_room_integrations(iroom,ichem_only,temp,rel_humidity,M,AER,light_ty
     #"""
     #Integration
     #"""
-    #dt = 150                        # Time between outputs (s), simulation may fail if this is too large 
+    #dt = 150                        # Time between outputs (s), simulation may fail if this is too large
+                                     # also used as max_step for the scipy.integrate.ode integrator
     #t0 = 0                          # time of day, in seconds from midnight, to start the simulation
     #seconds_to_integrate = 86400    # how long to run the model in seconds (86400*3 will run 3 days)
 
@@ -479,5 +484,3 @@ if __name__ == '__main__':
                 
     
         run_parallel_room_integrations(nroom,ichem_only,all_mrtemp,all_mrrh,all_mrpres,all_mraer,mrlightt,mrglasst,itvar_params,mrvol,mrsurfa,all_mrlswitch,all_mremis,custom_name,filename,particles,INCHEM_additional,custom,dt,t0,seconds_to_integrate,output_graph,output_species)
-        
-        
