@@ -31,7 +31,7 @@ from tqdm import tqdm
 import pandas as pd
 import re
 
-def initial_conditions(initial_filename,M,species,rate_numba,calc_dict,particles,initials_from_run,t0,path):
+def initial_conditions(initial_filename,M,species,rate_numba,calc_dict,particles,initials_from_run,t0,path,iroom,ichem_only,custom_name): #JGL: Added iroom, ichem_only and custom_name
     '''
     importing initial concentrations of gas phase species and particles if particles = True
     
@@ -57,19 +57,28 @@ def initial_conditions(initial_filename,M,species,rate_numba,calc_dict,particles
         from bisect import bisect_left
         #with open("%s/in_data.pickle" % path,'rb') as handle:
             #in_data = pickle.load(handle)
-        in_data = pd.read_pickle("%s/in_data.pickle" % path)
+        #in_data = pd.read_pickle('%s/%s/%s' % (path,custom_name+'_c'+str(ichem_only-1)+'_r'+str(iroom+1),'out_data.pickle')) #JGL: Added specificity w.r.t. custom_name, ichem_only and iroom
+        in_data = pd.read_pickle('%s/%s/%s' % (path,custom_name+'_c'+str(ichem_only-1)+'_r'+str(iroom+1),'restart_data.pickle')) #JGL: Added specificity w.r.t. custom_name, ichem_only and iroom, and pointed to restart_data cf. out_data
         index_values = in_data.index.values
+        print('index_values=',index_values) #JGL
         pos = bisect_left(index_values, t0)
+        print('pos=',pos) #JGL
         if pos == 0:
             index_import = index_values[0]
+            print('index_import=',index_import) #JGL
         if pos == len(index_values):
             index_import = index_values[-1]
+            print('index_import=',index_import) #JGL
         before = index_values[pos - 1]
+        print('before=',before) #JGL
         after = index_values[pos]
+        print('after=',after) #JGL
+        print('t0=',t0) #JGL
         if after - t0 < t0 - before:
            index_import = after
         else:
            index_import = before
+        print('index_import=',index_import) #JGL
                
         density_dict = {}
         for i in species:
