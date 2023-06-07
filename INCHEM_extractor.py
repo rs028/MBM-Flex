@@ -34,21 +34,26 @@ output_folder
 Variables to change
 '''
 #directories of data to extract and plot
-out_directories=[
-    '20210211_152040_test1',
-    '20210212_151525_test2',
-    '20210212_153517_test3']
+iroom=2
+nchem=2
+out_directories = []
+
+       
+for ichem in range (0,nchem):    
+    out_directories.append('First_Test_with_Roberto_c'+str(ichem)+'_r'+str(iroom))
+    
 
 #species to extract and plot
-species_to_extract=['LIMONENE','BENZENE','TOLUENE','OH_reactivity',
-                 'OH_production','J1']
+#species_to_extract=['LIMONENE','BENZENE','TOLUENE','OH_reactivity',
+#                 'OH_production','J1']
+species_to_extract=['O3']
 #All species will be saved to a seperate csv for each input directory.
 #A maximum of three seperate graphs will be made; species concentrations, 
 #reactivity, and production. 
 
 #times to plot from and to
 start_time = 0
-end_time = 3600*72
+end_time = 86400
 
 scale = "hours"
 #can be "hours", "minutes", "seconds"

@@ -27,7 +27,7 @@ along with INCHEM-Py.  If not, see <https://www.gnu.org/licenses/>.
 def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidity,
                M, const_dict, AER, diurnal, city, date, lat, light_type, 
                light_on_times, glass, HMIX, initials_from_run,
-               initial_conditions_gas, timed_emissions, timed_inputs, dt, t0,
+               initial_conditions_gas, timed_emissions, timed_inputs, dt, t0, iroom, ichem_only, path, output_folder, #JGL Added iroom, ichem_only, path and output_folder
                seconds_to_integrate, custom_name, output_graph, output_species):
   
     '''
@@ -433,7 +433,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
         #set integrator args
         atol = [1e-6]*num_species     #Default 1e-6
         rtol = 1e-6                  #Default 1e-6
-        first_step = 1e-10              #size of first integration step to try (s)
+        first_step = 1e-11              #size of first integration step to try (s)
         nsteps = 5000                   #max number of internal timesteps
         
         #set the integrator and arguments
@@ -444,9 +444,13 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
         #integrate
         while r.successful() and r.t<t_bound_internal:
             print('Iteration ', iters+1,'/', total_iter,'¦',r.t,' to ',r.t+dt)
+            print('Got here 1')  #JGL
             r.integrate(r.t+dt)
+            print('Got here 2')  #JGL
             iters=iters+1
+            print('Got here 3')  #JGL
             ret=r.get_return_code()
+            print('Got here 4')  #JGL
             if iters % save_rate == 0: #output every save_rate iterations
                 dt_out.append(int(r.t))
                 iter_time.append(timing.time()-start_time)
@@ -473,6 +477,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
                 if summations == True:
                     for i in sums_dict:
                         calculated_output[i].append(density_dict[i])
+            print('Got here 5')  #JGL
         return dt_out,n_new,iters,ret,iter_time,calculated_output
        
     '''
@@ -515,25 +520,34 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
         return np.log10(x)
         
     start_time=timing.time() #program start time
+
+    #JGL: Moved assignment of path and output_folder to settings.py and passed these to inchem_main.py    
+    #'''
+    #setting the output folder in current working directory
+    #'''
+ 
+    #path=os.getcwd()
+    #if ichem_only==0:  #JGL: Only create new output folder on first call to inchem_main.py for each room
     
-    '''
-    setting the output folder in current working directory
-    '''
-    path=os.getcwd()
-    now = datetime.datetime.now()
-    output_folder = ("%s_%s" % (now.strftime("%Y%m%d_%H%M%S"), custom_name))
-    os.mkdir('%s/%s' % (path,output_folder))
-    with open('%s/__init__.py' % output_folder,'w') as f:
-        pass
+        #now = datetime.datetime.now()
+        #output_folder = ("%s_%s" % (now.strftime("%Y%m%d_%H%M%S"), custom_name))
+        #os.mkdir('%s/%s' % (path,output_folder))
+        #with open('%s/__init__.py' % output_folder,'w') as f:
+        #    pass
     
-    print('Creating folder:', output_folder)
+        #print('Creating folder:', output_folder)
+
     
     '''
     Saving a copy of the settings and MCM files to the output folder
     '''
-    from shutil import copyfile
-    copyfile("settings.py", "%s/%s/settings.py" % (path,output_folder))
-    copyfile(filename, "%s/%s/mcm.fac" % (path,output_folder))
+    
+    if ichem_only==0:  #JGL: Only save these files to output folder on first call to inchem_main.py for each room
+    
+        from shutil import copyfile
+        copyfile("settings.py", "%s/%s/settings.py" % (path,output_folder))
+        copyfile(filename, "%s/%s/mcm.fac" % (path,output_folder))
+    
     
     t_bound = t0+seconds_to_integrate #Maximum time to integrate to
     iters = 0 #the number of iterations that have been performed already (leave as 0)
@@ -768,11 +782,11 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     '''
     density_dict,calc_dict = initial_conditions(initial_conditions_gas,M,species,\
                                                 rate_numba,calc_dict,particles,\
-                                                    initials_from_run,t0,path)
+                                                    initials_from_run,t0,path, iroom,ichem_only,custom_name) #JGL: Added iroom
     density_dict['RO2']=ppool_density_calc(density_dict,ppool)
     
     #calculating t0 summations
-    summations_dict={}
+    summations_dict={}  # JGL: NB Only sum of RO2 is currently saved to out_data.pickle and read from in_data.pickle - must save/read all speciated concs to avoid accumulating errors with nchem_only>1?
     if summations == True:
         summations_dict = summations_compile(sums)
         sums_dict={}
@@ -802,24 +816,37 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
                                      dt,reaction_compiled_dict,outdoor_dict,\
                                          surface_dict,timed_dict)
     
-    #creating the master array
-    master_array_dict=master_calc(reactions_numba,species,reaction_number,particles,\
-                                  particle_species,timed_emissions)
+    if ichem_only==0:  #JGL: Only create and save master_array_dict on first call to inchem_main.py for each room
+        
+        #creating the master array
+        master_array_dict=master_calc(reactions_numba,species,reaction_number,particles,\
+                                      particle_species,timed_emissions)
     
-    #saving the master array to the output folder
-    with open('%s/%s/master_array.pickle' % (path,output_folder),'wb') as handle:
-        pickle.dump(master_array_dict,handle)
+        #saving the master array to the output folder
+        with open('%s/%s/master_array.pickle' % (path,output_folder),'wb') as handle:
+            pickle.dump(master_array_dict,handle)
+    
+    if ichem_only>0:  #JGL: For all but first call to inchem_main.py for each room, load saved master_array_dict
+    
+        with open('%s/%s/master_array.pickle' % (path,custom_name+'_c0_r'+str(iroom+1)), 'rb') as handle: master_array_dict = pickle.load(handle) #JGL: DOES MASTER ARRAY NEED UPDATING WITH CHANGING TEMP ETC?
+        
     
     #compiling the master array
     master_compiled=master_compiler(master_array_dict,species)
     
-    #Create the jacobian and save it to the output folder
-    write_jacobian_build(master_array_dict,species,output_folder,path)
+    if ichem_only==0:  #JGL: Only create and save jacobian on first call to inchem_main.py for each room
+    
+        #Create the jacobian and save it to the output folder
+        write_jacobian_build(master_array_dict,species,output_folder,path)
     
     #import the jacobian function to create the jacobian dictionary which is a
     #dictionary of compiled calculations
+    #spec = importlib.util.spec_from_file_location("jac.jacobian_calc",\
+    #                                              "%s/%s/Jacobian.py" % (path,output_folder))
+        
     spec = importlib.util.spec_from_file_location("jac.jacobian_calc",\
-                                                  "%s/%s/Jacobian.py" % (path,output_folder))
+                                                  "%s/%s/Jacobian.py" % (path,custom_name+'_c0_r'+str(iroom+1))) #JGL: DOES JACOBIAN NEED UPDATING WITH CHANGING TEMP ETC?   
+        
     jac = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(jac)
     #jac = importlib.import_module(path+output_folder+".Jacobian")
@@ -898,8 +925,12 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     
     # saves all of the output data to the output folder
     with open('%s/%s/out_data.pickle' % (path,output_folder),'wb') as handle:
-        pickle.dump(output_data,handle)  
+        pickle.dump(output_data,handle)
         
+    # JGL: saves last timestep of output data to a restart file in output folder
+    with open('%s/%s/restart_data.pickle' % (path,output_folder),'wb') as handle:
+        pickle.dump(output_data.tail(1),handle)
+    
     #saves times for integrating each time step to a csv, useful for
     #analysing slow points in the system
     integration_times.to_csv("%s/%s/integration_times.csv" % (path,output_folder))
