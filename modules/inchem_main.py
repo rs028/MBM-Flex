@@ -435,11 +435,10 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
         rtol = 1e-6                  #Default 1e-6
         first_step = 1e-10              #size of first integration step to try (s)
         nsteps = 5000                   #max number of internal timesteps
-        max_step = dt                   #maximum time step allowed by integrator
         
         #set the integrator and arguments
         r=ode(dydt,dydy).set_integrator('lsoda',atol=atol,rtol=rtol,first_step=\
-                                        first_step,nsteps=nsteps,max_step=max_step)
+                                        first_step,nsteps=nsteps)
         r.set_initial_value(y0,t0)
         
         #integrate
