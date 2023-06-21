@@ -273,7 +273,7 @@ INCHEM_reactions=[
 ["9.20e-14*RO2*0.3","NGTERPO2=LIMBNO3"],
 
 #additional surface transformation
-["4.83E-3*HMIX","NO2=HONO"],
+["4.83E-3*AV","NO2=HONO"],
 
 # new chemistry for lactic acid + OH                                  
 #     - based on 3-hydroxy propanoic acid + OH (MCM)                  

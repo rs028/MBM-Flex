@@ -205,8 +205,8 @@ for ichem_only in range (0,nchem_only): #JGL: Loop over chemistry-only integrati
         #print('glass=',glass)
     
     
-        HMIX = (mrsurfa[iroom]/mrvol[iroom])/100 #NB Factor of 1/100 converts units from m-1 to cm-1
-        print('HMIX=',HMIX)
+        AV = (mrsurfa[iroom]/mrvol[iroom])/100 #NB Factor of 1/100 converts units from m-1 to cm-1
+        print('AV=',AV)
     
         lotstr='['
         for ihour in range (0,24):
@@ -274,16 +274,16 @@ for ichem_only in range (0,nchem_only): #JGL: Loop over chemistry-only integrati
         #glass="glass_C" # Can be "glass_C", "low_emissivity", "low_emissivity_film", or "no_sunlight".
         #"no_sunlight" sets all window attenuation factors to 0 and therefore no light enters from outdoors.
 
-        # JGL: Now determining HMIX from mr_tcon_params
+        # JGL: Now determining AV from mr_tcon_params
         """
         Surface deposition
         """
         # The surface dictionary exists in surface_dictionary.py in the modules folder.
         # To change any surface deposition rates of individual species, or to add species
         # this file must be edited. Production rates can be added as normal reactions
-        # in the custom inputs file. To remove surface deposition HMIX can be set to 0.
-        # HMIX is the surface to volume ratio (cm^-1)
-        #HMIX = 0.02 #0.01776
+        # in the custom inputs file. To remove surface deposition AV can be set to 0.
+        # AV is the surface to volume ratio (cm^-1)
+        #AV = 0.02 #0.01776
 
 
         # JGL: Moved settings re init concs inside ichem_only loop; after first chem-only integration, init concs taken from previous output
@@ -398,6 +398,6 @@ for ichem_only in range (0,nchem_only): #JGL: Loop over chemistry-only integrati
             from modules.inchem_main import run_inchem
             run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidity,
                        M, const_dict, AER, diurnal, city, date, lat, light_type, 
-                       light_on_times, glass, HMIX, initials_from_run,
+                       light_on_times, glass, AV, initials_from_run,
                        initial_conditions_gas, timed_emissions, timed_inputs, dt, t0, iroom, ichem_only, path, output_folder, #JGL added iroom, ichem_only, path and output_folder
                        seconds_to_integrate, custom_name, output_graph, output_species)

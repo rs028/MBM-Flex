@@ -26,7 +26,7 @@ along with INCHEM-Py.  If not, see <https://www.gnu.org/licenses/>.
 """
 def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidity,
                M, const_dict, AER, diurnal, city, date, lat, light_type, 
-               light_on_times, glass, HMIX, initials_from_run,
+               light_on_times, glass, AV, initials_from_run,
                initial_conditions_gas, timed_emissions, timed_inputs, dt, t0, iroom, ichem_only, path, output_folder, #JGL Added iroom, ichem_only, path and output_folder
                seconds_to_integrate, custom_name, output_graph, output_species):
   
@@ -609,7 +609,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
            'numba_sqrt':numba_sqrt,
            'H2O':h2o,
            'PI':pi,
-           'HMIX':HMIX,
+           'AV':AV,
            'numba_abs':numba_abs}
     
     calc_dict.update(const_dict) # add constants from settings to calc_dict
@@ -789,10 +789,10 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     '''
     Surface deposition
     '''
-    surface_dict=surface_deposition(HMIX)
+    surface_dict=surface_deposition(AV)
     for specie in species:
         if particles == True and specie in particle_species:
-            surface_dict['%s_SURF' % specie]=0.004*HMIX
+            surface_dict['%s_SURF' % specie]=0.004*AV
         elif '%s_SURF' % specie not in surface_dict.keys():
             surface_dict['%s_SURF' % specie]=0
     
