@@ -24,11 +24,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with INCHEM-Py.  If not, see <https://www.gnu.org/licenses/>.
 """
-def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidity,
-               M, const_dict, AER, diurnal, city, date, lat, light_type, 
+def run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
+               M, const_dict, ACRate_dict, diurnal, city, date, lat, light_type, 
                light_on_times, glass, AV, initials_from_run,
                initial_conditions_gas, timed_emissions, timed_inputs, dt, t0, iroom, ichem_only, path, output_folder, #JGL Added iroom, ichem_only, path and output_folder
-               seconds_to_integrate, custom_name, output_graph, output_species):
+               seconds_to_integrate, custom_name, output_graph, output_species,
+               reactions_output, H2O2_dep, O3_dep, adults, children,
+               surfaces_AV, settings_file, temperatures, spline):
   
     '''
     import all modules
@@ -40,12 +42,14 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     from modules.photolysis import photolysis_J, Zixu_photolysis, Zixu_photolysis_compiled
     from modules.initial_dictionaries import initial_conditions, master_calc, master_compiler,\
         reaction_rate_compile, reaction_eval, write_jacobian_build, INCHEM_species_calc
-    from modules.outdoor_concentrations import outdoor_rates, outdoor_rates_diurnal, outdoor_rates_calc
+    from modules.outdoor_concentrations import outdoor_rates, outdoor_rates_diurnal, outdoor_rates_calc,\
+        ACRate_updater
     import numpy as np
     import numba as nb
     from scipy.integrate import ode
+    from scipy import interpolate
     import time
-    from modules.surface_dictionary import surface_deposition
+    from modules.surface_dictionary import surface_deposition, O3_deposition, H2O2_deposition, breath_emissions
     from threadpoolctl import threadpool_limits
     import importlib.util
     import pandas as pd
@@ -140,7 +144,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     
         inputs:
             time = current simulation time (s)
-            temp = current temperature value (C)
+            temp = current temperature value (K)
             rel_humidity = current relative humidity (%), can be calculation
             numba_exp = exponent
             
@@ -152,6 +156,25 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
         h2o=6.1078*numba_exp(-1.0e+0*(597.3-0.57*(temp-273.16))*18.0/1.986*
                        (1.0/temp-1.0/273.16))*10./(1.38e-16*temp)*rh               
         return h2o,rh
+    
+    
+    def variable_temperature(time,temperatures,spline,tck):
+        '''
+        Interpolates a value for temperature given sparse temperature inputs
+        
+        inputs:
+            time = current simulation time
+            temperatures = input of temperatures at times in the form [[time (s),temp (K)],[...]]
+            spline = input of type of spline to use, BSpline or Linear
+            tck = A tuple containing a vector of knots, B-spline coefficients 
+                  and degree of the spline
+        '''
+        
+        if spline == "Linear":
+            temp = np.interp(time,[item[0]for item in temperatures],[item[1] for item in temperatures])
+        elif spline == "BSpline":
+            temp = float(interpolate.BSpline(*tck)(time))
+        return temp
     
     
     def ppool_density_calc(density_dict,ppool):
@@ -253,7 +276,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
         # COSX and SECX involve local hour angles dependant on position and time
         # of year (latitude of location and declination of sun)
     
-        lha = (1+((n-time_correct)/4.32E+4))*pi     # local hour angle, radians. Midnight start
+        lha = (1+((n)/4.32E+4))*pi     # local hour angle, radians. Midnight start
         cosx = ((numba_cos(lha)*cosld)+sinld)       # solar zenith angle 
         
         # Set negative cosx to zero and calculate the inverse  
@@ -277,6 +300,9 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
                 indoor_photo_dict_off["cosx"] = cosx
                 indoor_photo_dict_off["secx"] = secx
                 photolysis_J(indoor_photo_dict_off,photo_dict,J_dict)
+
+        #ACRate update
+        ACRate_updater(t,ACRate_dict,outdoor_dict)
         
         #diurnal outdoor rates
         if diurnal == True:
@@ -286,8 +312,10 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
             outdoor_rates_calc(outdoor_dict,outdoor_dict_diurnal,out_calc_dict)
         
         #recalculate humidity,water
-        h2o,rh = h2o_rh(t,temp,rel_humidity,numba_exp)
-        calc_dict['h2o']=h2o
+        if constant_temperature is False:
+            calc_dict['temp'] = variable_temperature(t,temperatures,spline,tck)
+        h2o,rh = h2o_rh(t,calc_dict['temp'],rel_humidity,numba_exp)
+        calc_dict['H2O']=h2o
      
         #recalculate particle sums
         if particles == True:
@@ -306,7 +334,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
                         timed_dict["%s_timed" % key] = 0
         
         #recalculate reaction rates
-        reaction_rate_dict=reaction_eval(reaction_number,J_dict,calc_dict,\
+        reaction_eval(reaction_rate_dict,reaction_number,J_dict,calc_dict,\
                                          density_dict,dt,reaction_compiled_dict,\
                                              outdoor_dict,surface_dict,\
                                                  timed_dict)
@@ -349,7 +377,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
         # COSX and SECX involve local hour angles dependant on position and time
         # of year (latitude of location and declination of sun)
     
-        lha = (1+((n-time_correct)/4.32E+4))*pi     # local hour angle, radians. Midnight start
+        lha = (1+((n)/4.32E+4))*pi     # local hour angle, radians. Midnight start
         cosx = ((numba_cos(lha)*cosld)+sinld)       # solar zenith angle 
         
         # Set negative cosx to zero and calculate the inverse  
@@ -373,6 +401,9 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
                 indoor_photo_dict_off["cosx"] = cosx
                 indoor_photo_dict_off["secx"] = secx
                 photolysis_J(indoor_photo_dict_off,photo_dict,J_dict)
+
+        #ACRate update
+        ACRate_updater(t,ACRate_dict,outdoor_dict)
         
         #diurnal outdoor rates
         if diurnal == True:
@@ -382,8 +413,10 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
             outdoor_rates_calc(outdoor_dict,outdoor_dict_diurnal,out_calc_dict)
         
         #recalculate temp,humidity,water
-        h2o,rh = h2o_rh(t,temp,rel_humidity,numba_exp)
-        calc_dict['h2o']=h2o
+        if constant_temperature is False:
+            calc_dict['temp'] = variable_temperature(t,temperatures,spline,tck)
+        h2o,rh = h2o_rh(t,calc_dict['temp'],rel_humidity,numba_exp)
+        calc_dict['H2O']=h2o
      
         #recalculate particle sums
         if particles == True:
@@ -402,9 +435,10 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
                         timed_dict["%s_timed" % key] = 0
                     
         #recalculate reaction rates
-        reaction_rate_dict=reaction_eval(reaction_number,J_dict,calc_dict,density_dict,\
+        reaction_eval(reaction_rate_dict,reaction_number,J_dict,calc_dict,density_dict,\
                                          dt,reaction_compiled_dict,outdoor_dict,\
                                              surface_dict,timed_dict)
+        
         
         #recalculate jacobian
         dydy_jac=dy_dy_calc(dy_dy_dict,J_dict,calc_dict,density_dict,species,\
@@ -454,6 +488,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
             calculated_output['acidsum'] = []
             calculated_output['tspx'] = []
             calculated_output['mwomv'] = []
+            calculated_output['soacalc'] = []
         for i in reactivity_dict:
             calculated_output[i] = []
         for i in production_dict:
@@ -466,12 +501,22 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
             for i in sums_dict:
                 calculated_output[i] = []
         
+        if reactions_output == True:
+            for i in reaction_rate_dict:
+                calculated_output[i] = [] #reaction rates
+            for i in surface_dict:
+                calculated_output[i] = [] #surface deposition values
+        
+        for i in calc_dict:
+            if "numba" not in i:
+                calculated_output[i] = []
+        
         #set integrator args
         atol = [1e-6]*num_species     #Default 1e-6
         rtol = 1e-6                  #Default 1e-6
         first_step = 1e-11              #size of first integration step to try (s)
         nsteps = 5000                   #max number of internal timesteps
-        max_step = dt                   #maximum time step allowed by integrator
+        max_step = dt
         
         #set the integrator and arguments
         r=ode(dydt,dydy).set_integrator('lsoda',atol=atol,rtol=rtol,first_step=\
@@ -505,6 +550,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
                     calculated_output['acidsum'].append(density_dict['acidsum'])
                     calculated_output['tspx'].append(density_dict['tspx'])
                     calculated_output['mwomv'].append(density_dict['mwomv'])
+                    calculated_output['soacalc'].append(density_dict['soacalc'])
                 for i in range(num_species):
                     n_new[i].append(r.y[i])
                 for i in J_dict:
@@ -514,6 +560,15 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
                 if summations == True:
                     for i in sums_dict:
                         calculated_output[i].append(density_dict[i])
+                if reactions_output == True:
+                    for i in reaction_rate_dict:
+                        calculated_output[i].append(reaction_rate_dict[i])
+                    for i in surface_dict:
+                        calculated_output[i].append(surface_dict[i])
+                for i in calc_dict:
+                    if "numba" not in i:
+                        calculated_output[i].append(calc_dict[i])
+                        
             print('Got here 5')  #JGL
         return dt_out,n_new,iters,ret,iter_time,calculated_output
        
@@ -582,7 +637,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     if ichem_only==0:  #JGL: Only save these files to output folder on first call to inchem_main.py for each room
     
         from shutil import copyfile
-        copyfile("settings.py", "%s/%s/settings.py" % (path,output_folder))
+    copyfile(settings_file, "%s/%s/%s_settings.py" % (path,output_folder,custom_name))
         copyfile(filename, "%s/%s/mcm.fac" % (path,output_folder))
     
     
@@ -595,6 +650,32 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     '''
     calculate initial values
     '''
+    temperatures_length = len(temperatures)
+    if type(spline) == int or type(spline) == float: # determine if constant temperature should be used
+        constant_temperature = True
+        temp = spline
+    elif temperatures_length == 1:
+        constant_temperature = True
+        temp = temperatures[0][1]
+    else: # else use a variable temperature
+        constant_temperature = False
+        # extend the temperatures given to cover the entire simulation
+        while temperatures[-1][0] < t0+seconds_to_integrate:
+            # duplicate temperatures in lengths of a day
+            temporary_temperatures = temperatures[temperatures_length*-1:]
+            temporary_temperatures = [[item[0]+86400,item[1]] for item in temporary_temperatures]
+            temperatures.extend(temporary_temperatures)
+
+        if temperatures[0][0] > t0:
+            # make sure a value for the temperature exists before t0
+            temporary_temperatures = temperatures[:temperatures_length]
+            temporary_temperatures = [[item[0]-86400,item[1]] for item in temporary_temperatures]    
+            temporary_temperatures.extend(temperatures)
+            temperatures = temporary_temperatures
+            
+        tck = interpolate.splrep([item[0]for item in temperatures],[item[1] for item in temperatures],s=0)
+        temp = variable_temperature(t0,temperatures,spline,tck)
+    
     h2o,rh = h2o_rh(t0,temp,rel_humidity,numba_exp)   
     
     species,ppool,rate_numba,reactions_numba=import_all(filename) #import from MCM download
@@ -610,22 +691,16 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
            'H2O':h2o,
            'PI':pi,
            'AV':AV,
-           'numba_abs':numba_abs}
+           'numba_abs':numba_abs,
+           'adults':adults,
+           'children':children}
     
     calc_dict.update(const_dict) # add constants from settings to calc_dict
     
-    '''
-    Particles
-    '''
-    particle_species=[]
-    if particles == True:
-        #the full MCM or a subset containing at least one of limonene, a-pinene, b-pinene need
-        #to be used, otherwise the calcuations for tsp and anything involving tsp will fail
-        particle_species, particle_reactions, particle_vap_dict, part_calc_dict = particle_import(species)
-        species = species + particle_species #add particle species to species list
-        reactions_numba = reactions_check(reactions_numba,particle_reactions,species)
-        rate_numba = rate_numba + [['kacid' , '1.5e-32*numba_exp(14770/temp)']]
-        calc_dict.update(particle_vap_dict)
+    if H2O2_dep == True or O3_dep == True:
+        calc_dict.update(surfaces_AV)
+        AV = float(sum(surfaces_AV.values()))
+        calc_dict['AV'] = AV
     
     '''
     Custom reactions and rates. Those not in the MCM download, the code does not
@@ -679,6 +754,36 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
             for i in INCHEM_reactions:
                 f.write("%s\n" % i)
     
+'''
+    Particles
+    '''
+    particle_species=[]
+    if particles == True:
+        #the full MCM or a subset containing at least one of limonene, a-pinene, b-pinene need
+        #to be used, otherwise the calcuations for tsp and anything involving tsp will fail
+        particle_species, particle_reactions, particle_vap_dict, part_calc_dict = particle_import(species)
+        species = species + particle_species #add particle species to species list
+        reactions_numba = reactions_check(reactions_numba,particle_reactions,species)
+        rate_numba = rate_numba + [['kacid' , '1.5e-32*numba_exp(14770/temp)']]
+        calc_dict.update(particle_vap_dict)    
+    
+'''
+    Optional H2O2 and O3 deposition
+    '''
+    if H2O2_dep == True:
+        H2O2_rates, H2O2_reactions = H2O2_deposition()
+        reactions_numba = reactions_numba + H2O2_reactions
+        rate_numba = rate_numba + H2O2_rates
+    if O3_dep == True:
+        O3_rates, O3_reactions = O3_deposition()
+        reactions_numba = reactions_numba + O3_reactions
+        rate_numba = rate_numba + O3_rates
+    if adults+children > 0:
+        breath_rates, breath_reactions = breath_emissions()
+        reactions_numba = reactions_numba + breath_reactions
+        rate_numba = rate_numba + breath_rates
+        
+    
     '''
     Additional clean up, checking for summations from custom inputs
     '''
@@ -705,13 +810,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     Photolysis
     
     The simulation works on solar time of day and does not require any input 
-    of longitude. However, if a comparison is being done with measured data then
-    the time_correct variable can be used to shift the photolysis a number of
-    seconds in either direction, this will also shift the outdoor photolysis
-    used in some of the outdoor concentration calculations. Not all of the
-    outdoor concentrations rely on this method of calculation so adjustments
-    must also be made to any other outdoor rates and thus I do not recommend 
-    using this method. I would instead adjust the full output after the run.
+    of longitude.
     '''
     #calculations for determining solar position given time of year    
     day, month, year = map(int, date.split('-'))
@@ -723,8 +822,6 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     
     lat = lat/radian #conversion to radians
     dec = dec/radian #conversion to radians
-    
-    time_correct = 0 #adjustment for correction of solar time to measured time
     
     #calculations for spherical law of cosines for solar zenith angle
     sinld = numba_sin(lat)*numba_sin(dec)
@@ -743,10 +840,10 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     
     # COSX and SECX involve local hour angles dependant on position and time
     # of year (latitude of location and declination of sun)
-    lha = (1+((n-time_correct)/4.32E+4))*pi    # local hour angle, radians. Midnight start
+    lha = (1+((n)/4.32E+4))*pi    # local hour angle, radians. Midnight start
     cosx = ((numba_cos(lha)*cosld)+sinld) # solar zenith angle
      
-    # (http://mcm.leeds.ac.uk/MCM/parameters/photolysis_param.htt)
+    # (http://mcm.york.ac.uk/parameters/photolysis_param.htt)
     # Keep cosx 0 or positive, we don't have negative photolysis
     if cosx <= 1E-30:
         cosx = 0.0  
@@ -780,7 +877,10 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
                      "secx":secx}
     
     #Outdoor dictionaries
-    outdoor_dict=outdoor_rates(AER,particles,species)
+    outdoor_dict=outdoor_rates(particles,species)
+    #ACRate update
+    ACRate_updater(t0,ACRate_dict,outdoor_dict)
+    #Diurnal variation
     if diurnal == True:
         outdoor_dict_diurnal = outdoor_rates_diurnal(city)
         outdoor_rates_calc(outdoor_dict,outdoor_dict_diurnal,out_calc_dict)
@@ -789,7 +889,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     '''
     Surface deposition
     '''
-    surface_dict=surface_deposition(AV)
+    surface_dict=surface_deposition(AV,H2O2_dep,O3_dep)
     for specie in species:
         if particles == True and specie in particle_species:
             surface_dict['%s_SURF' % specie]=0.004*AV
@@ -850,10 +950,22 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     #better to calculate it once rather than every time
     
     reaction_compiled_dict=reaction_rate_compile(reactions_numba,reaction_number)
-    reaction_rate_dict=reaction_eval(reaction_number,J_dict,calc_dict,density_dict,\
+    reaction_rate_dict={}
+    reaction_eval(reaction_rate_dict,reaction_number,J_dict,calc_dict,density_dict,\
                                      dt,reaction_compiled_dict,outdoor_dict,\
                                          surface_dict,timed_dict)
-    
+
+    if reactions_output == True:
+        ###
+        # Saving a dictionary of reactions and their numbers
+        reactions_save={}
+        for i,x in enumerate(reactions_numba):
+            reactions_save[reaction_number[i]]=x
+            
+        with open('%s/reactions.pickle' % output_folder,'wb') as handle:
+            pickle.dump(reactions_save,handle)
+        ###
+
     if ichem_only==0:  #JGL: Only create and save master_array_dict on first call to inchem_main.py for each room
         
         #creating the master array
@@ -920,6 +1032,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
         calculated_output_tot['acidsum'] = [density_dict['acidsum']]
         calculated_output_tot['tspx'] = [density_dict['tspx']]
         calculated_output_tot['mwomv'] = [density_dict['mwomv']]
+        calculated_output_tot['soacalc'] = [density_dict['soacalc']]
     for i in reactivity_dict:
         calculated_output_tot[i] = [reactivity_dict[i]]
     for i in production_dict:
@@ -931,6 +1044,16 @@ def run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidit
     if summations == True:
         for i in sums_dict:
             calculated_output_tot[i] = [density_dict[i]]
+    
+    if reactions_output == True:
+        for i in reaction_rate_dict:
+            calculated_output_tot[i] = [reaction_rate_dict[i]] #reaction rates
+        for i in surface_dict:
+            calculated_output_tot[i] = [surface_dict[i]] #surface deposition values
+            
+    for i in calc_dict:
+        if "numba" not in i:
+            calculated_output_tot[i] = [calc_dict[i]]
     
     ret=1 #if ret=2 success. ODE return code
     
