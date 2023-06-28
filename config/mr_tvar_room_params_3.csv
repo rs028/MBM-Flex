@@ -1,4 +1,5 @@
-﻿seconds_from_midnight,temp_in_kelvin,rh_in_percent,pressure_in_pascal,acrate_in_per_second,light_switch
+﻿seconds_from_midnight,temp_in_kelvin,rh_in_percent,pressure_in_pascal,airchange_in_per_second,light_switch
+0,293,50,101537.07,0.000138889,0
 3600,293,50,101537.07,0.000138889,0
 7200,293,50,101537.07,0.000138889,0
 10800,293,50,101537.07,0.000138889,0
@@ -22,4 +23,3 @@
 75600,293,50,101537.07,0.000138889,0
 79200,293,50,101537.07,0.000138889,0
 82800,293,50,101537.07,0.000138889,0
-86400,293,50,101537.07,0.000138889,0
