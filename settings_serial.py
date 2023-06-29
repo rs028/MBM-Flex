@@ -264,14 +264,15 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         #print('iroom=',iroom)
 
         """
-        
+        Temperatures, humidity 
         """
         # Temperatures are interpolated from a list of given values (`mr_tvar_room_params_*.csv`)
         # using either a 'Linear' or a 'BSpline' interpolation method. The list has the format:
         # [[time (s), temperature (K)],[time (s), temperature (K)], ...]
         # Alternatively, a constant temperature can also be set without interpolation.
         # Details of these methods are given in the INCHEM-Py user manual.
-        # Note that in MBM-Flex, temperatures are set as a list of tuples not a list of lists:
+        #
+        # NB: in MBM-Flex, temperatures are set as a list of tuples not a list of lists:
         # this shouldn't make a difference unless the code tries to change the temperature.
         spline = 'Linear'  # 'Linear' interpolation, by default
         temperatures = all_mrtemplist[iroom]#[itvar_params] # temperature (Kelvin)
@@ -284,7 +285,8 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         M = [tuple[1]*Mfact for tuple in temperatures] # number density of air (molecule cm^-3)
         #print('M=',M)
 
-        # TODO : this doesn't work because M is a list not a single number 
+        # TODO : this doesn't work because M is a list not a single number
+        #        related, should Pressure be different in different rooms?
         # Place any species you wish to remain constant in the below dictionary. Follow the format.
         # const_dict = {
         #     'O2':0.2095*M,
@@ -417,7 +419,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         # An output pickle file is automatically saved so that all data can be recovered
         # at a later date for analysis. Applies to folder name and settings file copy name.
         custom_name = 'Test_20230629_Serial'
-        print('custom_name=',custom_name)
+        #print('custom_name=',custom_name)
 
         # INCHEM-Py calculates the rate constant for each reaction at every time point
         # Setting reactions_output to True saves all reactions and their assigned constant
