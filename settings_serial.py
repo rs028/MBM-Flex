@@ -35,65 +35,74 @@ from math import ceil
 
 # =============================================================================================== #
 
-# Basic settings
-filename = 'mcm_v331.fac' # facsimile format input chemical mechanism
+# Basic model settings
+filename = 'mcm_v331.fac'   # Chemical mechanism file in FACSIMILE format
 
-particles = False # set to True if particles are included
+particles = False   # set to True if particles are included
 
-INCHEM_additional = True # set to True to add the additional INCHEM mechanism
-                         # that are not included in the MCM
+INCHEM_additional = True   # set to True to include the additional INCHEM mechanism
 
-custom = False # custom reactions that are not in the MCM included?
-               # format of this file is in an included custom file called custom_input.txt.
+custom = False   # Custom reactions that are not in the MCM or in the INCHEM mechanism
+                 # The format of this file is described in `custom_input.txt`
 
-diurnal = True     # diurnal outdoor concentrations. Boolean
+diurnal = True   # Diurnal outdoor concentrations. Boolean
 
-city = "Bergen_urban" #source city of outdoor concentrations of O3, NO, NO2, and PM2.5
-                      # options are "London_urban", "London_suburban" or "Bergen_urban"
-                      # Changes to outdoor concentrations can be done in outdoor_concentrations.py
-                      # See the INCHEM-Py manual for details of sources and fits
+city = "Bergen_urban"   # Source city of outdoor concentrations of O3, NO, NO2, and PM2.5
+                        # Options are "London_urban", "London_suburban" or "Bergen_urban"
+                        # Changes to outdoor concentrations can be done in outdoor_concentrations.py
+                        # See the INCHEM-Py manual for details of sources and fits
 
-date = "21-06-2020" # day of simulation in format "DD-MM-YYYY"
-lat = 45.4          # Latitude of simulation location
+date = "21-06-2020"   # Day of simulation in format "DD-MM-YYYY"
+lat = 45.4   # Latitude of simulation location
 
-nroom = 3 # Number of rooms (each room treated as one box); NB room index, iroom will start from 0
+# =============================================================================================== #
+# Integration settings and time control
+
+dt = 150     # Time between outputs (s), simulation may fail if this is too large
+             # also used as max_step for the scipy.integrate.ode integrator
+t0 = 0       # time of day, in seconds from midnight, to start the simulation
+
+total_seconds_to_integrate = 4800   # how long to run the model in seconds (86400*3 will run 3 days)
+
+end_of_total_integration = t0+total_seconds_to_integrate
+
+ # Set length of chemistry-only integrations between simple treatments of transport (assumed separable)
+tchem_only = 600     # NB: MUST BE < 3600 SECONDS
+
+# Calculate nearest whole number of chemistry-only integrations, approximating seconds_to_integrate
+nchem_only = round(total_seconds_to_integrate/tchem_only)
+
+if nchem_only == 0:
+    nchem_only = 1
+
+# print('total_seconds_to_integrate set to',total_seconds_to_integrate)
+# print('tchem_only set to',tchem_only)
+# print('nchem_only therefore set to',nchem_only)
+
+seconds_to_integrate = tchem_only
+# print('seconds_to_integrate set to',seconds_to_integrate)
 
 # =============================================================================================== #
 
-
-
-
-# """
-# Timed concentrations
-# """
-# timed_emissions = True # is there a species, or set of species that has a forced density change
-#                        # at a specific point in time during the integration? If so then this needs to be set to True
-#                        # and the dictionary called timed_inputs (below) needs to be populated
-
-# When using timed emissions it's suggested that the start time and end times are divisible by dt
-# and that (start time - end time) is larger then 2*dt to avoid the integrator skipping any
-# emissions over small periods of time.
-
-# the dictionary should be populated as
-# timed_inputs = {species1:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]],
-#                 species2:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]]}
-
-# JGL: The relevant parameters are read in from room-specific csv files, mr_room_emis_params_[iroom+1] where 0 ≤ iroom ≤ nroom and iroom=0 is reserved for outdoors
-
-# INPUT DATA (1)
-# parameters of each room that do not change with time: `mr_tcon_room_params.csv`
-# - volume
-# - surface area
-# - type of light
-# - type of glass
-# - types of surface (percent coverage)
+# INPUT DATA: physical characteristics of the rooms
+#
+# Room parameters that do not change with time: `mr_tcon_room_params.csv`
+# - number of rooms
+# - volume of each room
+# - surface area in each room
+# - type of light in each room
+# - type of glass (windows) in each room
+# - types of surface in each room (as percent coverage)
 tcon_params = read_csv("config/mr_tcon_room_params.csv")
+
+nroom = len(tcon_params['room_number']) # number of rooms (each room treated as one box)
 
 mrvol = tcon_params['volume_in_m3'].tolist()
 mrsurfa = tcon_params['surf_area_in_m2'].tolist()
 mrlightt = tcon_params['light_type'].tolist()
 mrglasst = tcon_params['glass_type'].tolist()
 
+# TODO : need input from Dave
 # mrsoft = tcon_params['percent_soft'].tolist()
 # mrpaint = tcon_params['percent_paint'].tolist()
 # mrwood = tcon_params['percent_wood'].tolist()
@@ -106,20 +115,24 @@ mrglasst = tcon_params['glass_type'].tolist()
 
 # =============================================================================================== #
 
-# INPUT DATA (2)
-# parameters and people in each room that change with time, and emission rates of chemical species
+# INPUT DATA: physical and chemical variables of the rooms
+#
+# Room parameters that change with time and emissions of chemical species
 all_mrtemplist = []
 all_mrrh = []
 all_mrpres = []
 all_mracrate = []
 all_mrlswitch = []
+
 all_mradults = []
 all_mrchildren = []
+
 all_mremis = {}
+all_timemis = []
 
 for iroom in range(0, nroom):
 
-    # parameters of each room variable with time: `mr_tvar_room_params_*.csv`
+    # physical parameters of each room variable with time: `mr_tvar_room_params_*.csv`
     # - temperature (K)
     # - relative humidity (%)
     # - pressure (Pa)
@@ -158,8 +171,10 @@ for iroom in range(0, nroom):
     #print('all_mradults=',all_mradults)
 
     # emissions of chemical species in each room variable with time: `mr_room_emis_params_*.csv`
-    # each species can be emitted in 6 separate intervals with an emission rate in molecule cm^-3 s^-1
-    # different chemical species can be emitted in each room
+    #
+    # NB: when using timed emissions it's suggested that the start time and end times are
+    # divisible by dt and that (start time - end time) is larger then 2*dt to avoid the
+    # integrator skipping any emissions over small periods of time.
     mremis_params = read_csv("config/mr_room_emis_params_"+str(iroom+1)+".csv")
 
     mremis_species = mremis_params['species'].tolist()
@@ -198,41 +213,14 @@ for iroom in range(0, nroom):
           [mremis_tstart5[iemis_species],mremis_tend5[iemis_species],mremis_emis5[iemis_species]],\
           [mremis_tstart6[iemis_species],mremis_tend6[iemis_species],mremis_emis6[iemis_species]]
 
-    all_mremis [iroom] = mremis
+    all_mremis[iroom] = mremis
     #print('all_mremis(',iroom,')=',all_mremis[iroom])
-
-# =============================================================================================== #
-
-
-# =============================================================================================== #
-# Integration settings and time control
-
-"""
-Integration
-"""
-dt = 150                        # Time between outputs (s), simulation may fail if this is too large
-                                # also used as max_step for the scipy.integrate.ode integrator
-t0 = 0                          # time of day, in seconds from midnight, to start the simulation
-
-total_seconds_to_integrate = 4800   # how long to run the model in seconds (86400*3 will run 3 days)
-                                    # JGL: renamed total_[seconds_to_integrate]
-
-end_of_total_integration = t0+total_seconds_to_integrate
-
-tchem_only = 600 # Set length of chemistry-only integrations between simple treatments
-                 # of transport (assumed separable). NB: MUST BE < 3600 SECONDS
-
-nchem_only = round(total_seconds_to_integrate/tchem_only) # JGL: Calculate nearest whole number of chemistry-only
-                                                          # integrations approximating seconds_to_integrate
-if nchem_only == 0:
-    nchem_only = 1
-
-# print('total_seconds_to_integrate set to',total_seconds_to_integrate)
-# print('tchem_only set to',tchem_only)
-# print('nchem_only therefore set to',nchem_only)
-
-seconds_to_integrate = tchem_only
-# print('seconds_to_integrate set to',seconds_to_integrate)
+    
+    # switch emissions off if the csv file for this room is empty
+    if len(mremis) == 0: 
+        all_timemis.append(False)
+    else:
+        all_timemis.append(True)
 
 # =============================================================================================== #
 
@@ -240,11 +228,11 @@ seconds_to_integrate = tchem_only
 # then run the transport module (`mr_transport.py`), reinitialize the model and
 # run again until end_of_total_integration
 for ichem_only in range (0,nchem_only): # loop over chemistry-only integration periods
-    print('ichem_only=',ichem_only)
+    #print('ichem_only=',ichem_only)
 
-    if ichem_only>0:
+    if ichem_only > 0:
         #(1) ADD SIMPLE TREATMENT OF TRANSPORT HERE
-        if (__name__ == "__main__") and (nroom >=2):
+        if (__name__ == "__main__") and (nroom >= 2):
             from modules.mr_transport import calc_transport
             #calc_transport(custom_name,ichem_only,tchem_only,nroom,mrvol)
 
@@ -257,7 +245,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
     end_of_tchem_only = t0 + tchem_only
     t0_corrected = t0-((ceil(t0/86400)-1)*86400)
     end_of_tchem_only_corrected = end_of_tchem_only-((ceil(t0/86400)-1)*86400)
-    if end_of_tchem_only_corrected<=86400:
+    if end_of_tchem_only_corrected <= 86400:
         mid_of_tchem_only = 0.5*(t0_corrected + end_of_tchem_only_corrected)
     else:
         mid_of_tchem_only = (0.5*(t0_corrected + end_of_tchem_only_corrected))-86400
@@ -274,7 +262,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
     # SECONDARY LOOP: for each chemistry-only integration period run INCHEM-Py in each room
     # and save the output of the run in a separate directory
     for iroom in range (0,nroom): # loop over rooms
-        print('iroom=',iroom)
+        #print('iroom=',iroom)
 
 
         # Set temperature, relative humidity, number density of air (M)
@@ -296,7 +284,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
 
         Mfact = (all_mrpres[iroom][itvar_params]/8.3144626)*(6.0221408e23/1e6)
         M = [tuple[1]*Mfact for tuple in temperatures] # number density of air (molecule cm^-3)
-        print('M=',M)
+        #print('M=',M)
 
         # place any species you wish to remain constant in the below dictionary. Follow the format
         # const_dict = {
@@ -379,6 +367,11 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
 
 #         # Settings re emissions are outside ichem_only and iroom loops
 #         # timed_inputs assigned below based on room-specific parameter string constructed above
+    #    # the dictionary should be populated as
+        # timed_inputs = {species1:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]],
+        #                 species2:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]]}
+        # each species can be emitted in 6 separate intervals with an emission rate in molecule cm^-3 s^-1
+        # different chemical species can be emitted in each room
 #         """
 #         Timed concentrations
 #         """
@@ -447,47 +440,47 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
 #             pass
 #         print('Creating folder:', output_folder)
 
-        print(filename)
-        print(particles)
-        print(INCHEM_additional)
-        print(custom)
-        print(temperatures)
-        print(rel_humidity)
-        print(M)
+        #print(filename)
+        #print(particles)
+        #print(INCHEM_additional)
+        #print(custom)
+        #print(temperatures)
+        #print(rel_humidity)
+        #print(M)
         #print(const_dict)
         # print(ACRate)
-        print(diurnal)
-        print(city)
-        print(date)
-        print(lat)
-        print(light_type)
-          # print(light_on_times)
-        print(glass)
-          # print(AV)
-          # print(initials_from_run)
-          # print(initial_conditions_gas)
-          # print(timed_emissions)
-          # print(timed_inputs)
-          # print(dt)
-          # print(t0)
-          # print(iroom)
-          # print(ichem_only)
-          # print(path)
-          # print(output_folder)
-          # print(seconds_to_integrate)
-          # print(custom_name)
-          # print(output_graph)
-          # print(output_species)
-          # print(reactions_output)
-          # print(H2O2_dep)
-          # print(O3_dep)
-          # print(adults)
-          # print(children)
-          # print(surfaces_AV)
-          # print(__file__)
-        print(temperatures)
-        print(spline)
-        print("---------------------")
+        #print(diurnal)
+        #print(city)
+        #print(date)
+        #print(lat)
+        #print(light_type)
+        # print(light_on_times)
+        #print(glass)
+        # print(AV)
+        # print(initials_from_run)
+        # print(initial_conditions_gas)
+        # print(timed_emissions)
+        # print(timed_inputs)
+        # print(dt)
+        # print(t0)
+        # print(iroom)
+        # print(ichem_only)
+        # print(path)
+        # print(output_folder)
+        # print(seconds_to_integrate)
+        # print(custom_name)
+        # print(output_graph)
+        # print(output_species)
+        # print(reactions_output)
+        # print(H2O2_dep)
+        # print(O3_dep)
+        # print(adults)
+        # print(children)
+        # print(surfaces_AV)
+        # print(__file__)
+        #print(temperatures)
+        #print(spline)
+        #print("---------------------")
 #         """
 #         Run the simulation
 #         """
