@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-User set variable input file for INCHEM-Py. 
+User set variable input file for INCHEM-Py.
 A detailed description of this file can be found within the user manual.
 
-Copyright (C) 2019-2021 
+Copyright (C) 2019-2021
 David Shaw : david.shaw@york.ac.uk
 Nicola Carslaw : nicola.carslaw@york.ac.uk
 
@@ -25,153 +25,235 @@ You should have received a copy of the GNU General Public License
 along with INCHEM-Py.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
-
-
-
-# JGL: Added further module imports
-import csv
-from pandas import *
-import sys
-from math import ceil
+# Import modules
 import os
 import datetime
-import shutil
+from pandas import read_csv
+from math import ceil
+#import shutil
+#import sys
+
+# =============================================================================================== #
+
+# Basic settings
+filename = 'mcm_v331.fac' # facsimile format input chemical mechanism
+
+particles = False # set to True if particles are included
+
+INCHEM_additional = True # set to True to add the additional INCHEM mechanism
+                         # that are not included in the MCM
+
+custom = False # custom reactions that are not in the MCM included?
+               # format of this file is in an included custom file called custom_input.txt.
+
+diurnal = True     # diurnal outdoor concentrations. Boolean
+
+city = "Bergen_urban" #source city of outdoor concentrations of O3, NO, NO2, and PM2.5
+                      # options are "London_urban", "London_suburban" or "Bergen_urban"
+                      # Changes to outdoor concentrations can be done in outdoor_concentrations.py
+                      # See the INCHEM-Py manual for details of sources and fits
+
+date = "21-06-2020" # day of simulation in format "DD-MM-YYYY"
+lat = 45.4          # Latitude of simulation location
+
+nroom = 3 # Number of rooms (each room treated as one box); NB room index, iroom will start from 0
+
+# =============================================================================================== #
 
 
 
 
+# """
+# Timed concentrations
+# """
+# timed_emissions = True # is there a species, or set of species that has a forced density change
+#                        # at a specific point in time during the integration? If so then this needs to be set to True
+#                        # and the dictionary called timed_inputs (below) needs to be populated
 
-filename = 'mcm_v331.fac' # facsimile format input filename
+# When using timed emissions it's suggested that the start time and end times are divisible by dt
+# and that (start time - end time) is larger then 2*dt to avoid the integrator skipping any
+# emissions over small periods of time.
 
-particles = True # Are we including particles. Boolean
-
-INCHEM_additional = True #Set to True if additional reactions from the INCHEM are being used
-#that do not appear in the MCM download
-
-custom = False # Custom reactions that are not in the MCM included?
-# Format of this file is in an included custom file called custom_input.txt.
-
-
-# JGL: Moved settings re emissions to here     
-"""
-Timed concentrations
-"""
-timed_emissions = True # is there a species, or set of species that has a forced density change
-# at a specific point in time during the integration? If so then this needs to be set to True
-# and the dictionary called timed_inputs needs to be populated. This takes the following form:
+# the dictionary should be populated as
 # timed_inputs = {species1:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]],
 #                 species2:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]]}
+
 # JGL: The relevant parameters are read in from room-specific csv files, mr_room_emis_params_[iroom+1] where 0 ≤ iroom ≤ nroom and iroom=0 is reserved for outdoors
-nemis_species = 2 # JGL: Number of species for which emission parameters are provided in said files
 
-
-nroom = 3 # JGL: Number of rooms (each room treated as one box); NB room index, iroom will start from 0
-
-#all_secsfrommn = []
-all_mrtemp = []
-all_mrrh = []
-all_mrpres = []
-all_mraer = []
-all_mrls = []
-all_mrlswitch = []
-
-all_mremis = {}
-
-for iroom in range(0, nroom):
-    
-    tvar_params = read_csv("mr_tvar_room_params_"+str(iroom+1)+".csv")
-
-    secsfrommn = tvar_params['seconds_from_midnight'].tolist()
-    mrtemp = tvar_params['temp_in_kelvin'].tolist()
-    mrrh = tvar_params['rh_in_percent'].tolist()
-    mrpres = tvar_params['pressure_in_pascal'].tolist()
-    mraer = tvar_params['aer_in_per_second'].tolist()
-    mrlswitch = tvar_params['light_switch'].tolist()
-    #print('mrtemp=',mrtemp)
-    
-    all_mrtemp.append(mrtemp)
-    all_mrrh.append(mrrh)
-    all_mrpres.append(mrpres)
-    all_mraer.append(mraer)
-    all_mrlswitch.append(mrlswitch)
-    
-    mremis_params = read_csv("mr_room_emis_params_"+str(iroom+1)+".csv")
-    mremis_species = mremis_params['species'].tolist()
-    mremis_tstart1 = mremis_params['tstart1_in_seconds'].tolist()
-    mremis_tend1 = mremis_params['tend1_in_seconds'].tolist()
-    mremis_emis1 = mremis_params['emis1_in_molcm-3sec-1'].tolist()
-    mremis_tstart2 = mremis_params['tstart2_in_seconds'].tolist()
-    mremis_tend2 = mremis_params['tend2_in_seconds'].tolist()
-    mremis_emis2 = mremis_params['emis2_in_molcm-3sec-1'].tolist()
-    mremis_tstart3 = mremis_params['tstart3_in_seconds'].tolist()
-    mremis_tend3 = mremis_params['tend3_in_seconds'].tolist()
-    mremis_emis3 = mremis_params['emis3_in_molcm-3sec-1'].tolist()
-    mremis_tstart4 = mremis_params['tstart4_in_seconds'].tolist()
-    mremis_tend4 = mremis_params['tend4_in_seconds'].tolist()
-    mremis_emis4 = mremis_params['emis4_in_molcm-3sec-1'].tolist()
-    mremis_tstart5 = mremis_params['tstart5_in_seconds'].tolist()
-    mremis_tend5 = mremis_params['tend5_in_seconds'].tolist()
-    mremis_emis5 = mremis_params['emis5_in_molcm-3sec-1'].tolist()
-    mremis_tstart6 = mremis_params['tstart6_in_seconds'].tolist()
-    mremis_tend6 = mremis_params['tend6_in_seconds'].tolist()
-    mremis_emis6 = mremis_params['emis6_in_molcm-3sec-1'].tolist()
-    
-    mremis = {}
-    for iemis_species in range(0, nemis_species):
-        mremis [mremis_species[iemis_species]] = [mremis_tstart1[iemis_species],mremis_tend1[iemis_species],mremis_emis1[iemis_species]],\
-         [mremis_tstart2[iemis_species],mremis_tend2[iemis_species],mremis_emis2[iemis_species]],\
-         [mremis_tstart3[iemis_species],mremis_tend3[iemis_species],mremis_emis3[iemis_species]],\
-         [mremis_tstart4[iemis_species],mremis_tend4[iemis_species],mremis_emis4[iemis_species]],\
-         [mremis_tstart5[iemis_species],mremis_tend5[iemis_species],mremis_emis5[iemis_species]],\
-         [mremis_tstart6[iemis_species],mremis_tend6[iemis_species],mremis_emis6[iemis_species]]
-    all_mremis [iroom] = mremis        
-    print('all_mremis(',iroom,')=',all_mremis[iroom])   
-    
-
-tcon_params = read_csv("mr_tcon_room_params.csv")
+# INPUT DATA (1)
+# parameters of each room that do not change with time: `mr_tcon_room_params.csv`
+# - volume
+# - surface area
+# - type of light
+# - type of glass
+# - types of surface (percent coverage)
+tcon_params = read_csv("config/mr_tcon_room_params.csv")
 
 mrvol = tcon_params['volume_in_m3'].tolist()
 mrsurfa = tcon_params['surf_area_in_m2'].tolist()
 mrlightt = tcon_params['light_type'].tolist()
 mrglasst = tcon_params['glass_type'].tolist()
 
+# mrsoft = tcon_params['percent_soft'].tolist()
+# mrpaint = tcon_params['percent_paint'].tolist()
+# mrwood = tcon_params['percent_wood'].tolist()
+# mrmetal = tcon_params['percent_metal'].tolist()
+# mrconcrete = tcon_params['percent_concrete'].tolist()
+# mrpaper = tcon_params['percent_paper'].tolist()
+# mrplastic = tcon_params['percent_plastic'].tolist()
+# mrglass = tcon_params['percent_glass'].tolist()
+# mrlino = tcon_params['percent_lino'].tolist()
 
-# JGL: Moved assignment of dt, t0 and seconds_to_integrate to here
+# =============================================================================================== #
+
+# INPUT DATA (2)
+# parameters and people in each room that change with time, and emission rates of chemical species
+all_mrtemplist = []
+all_mrrh = []
+all_mrpres = []
+all_mracrate = []
+all_mrlswitch = []
+all_mradults = []
+all_mrchildren = []
+all_mremis = {}
+
+for iroom in range(0, nroom):
+
+    # parameters of each room variable with time: `mr_tvar_room_params_*.csv`
+    # - temperature (K)
+    # - relative humidity (%)
+    # - pressure (Pa)
+    # - outdoor/indoor change rate (s^-1)
+    # - light switch (on/off)
+    tvar_params = read_csv("config/mr_tvar_room_params_"+str(iroom+1)+".csv")
+
+    secsfrommn = tvar_params['seconds_from_midnight'].tolist()
+    mrtemp = tvar_params['temp_in_kelvin'].tolist()
+    mrrh = tvar_params['rh_in_percent'].tolist()
+    mrpres = tvar_params['pressure_in_pascal'].tolist()
+    mracrate = tvar_params['airchange_in_per_second'].tolist()
+    mrlswitch = tvar_params['light_switch'].tolist()
+
+    mrtemplist = list(zip(secsfrommn,mrtemp))
+    #print(mrtemplist)
+
+    all_mrtemplist.append(mrtemplist)
+    all_mrrh.append(mrrh)
+    all_mrpres.append(mrpres)
+    all_mracrate.append(mracrate)
+    all_mrlswitch.append(mrlswitch)
+    #print('all_mrtemplist=',all_mrtemplist)
+
+    # people in each room variable with time: `mr_tvar_expos_params_*.csv`
+    # - number of adults
+    # - number of children
+    tvar_params = read_csv("config/mr_tvar_expos_params_"+str(iroom+1)+".csv")
+
+    secsfrommn = tvar_params['seconds_from_midnight'].tolist()
+    mradults = tvar_params['n_adults'].tolist()
+    mrchildren = tvar_params['n_children'].tolist()
+
+    all_mradults.append(mradults)
+    all_mrchildren.append(mrchildren)
+    #print('all_mradults=',all_mradults)
+
+    # emissions of chemical species in each room variable with time: `mr_room_emis_params_*.csv`
+    # each species can be emitted in 6 separate intervals with an emission rate in molecule cm^-3 s^-1
+    # different chemical species can be emitted in each room
+    mremis_params = read_csv("config/mr_room_emis_params_"+str(iroom+1)+".csv")
+
+    mremis_species = mremis_params['species'].tolist()
+    nemis_species = len(mremis_species)
+
+    mremis_tstart1 = mremis_params['tstart1_in_seconds'].tolist()
+    mremis_tend1 = mremis_params['tend1_in_seconds'].tolist()
+    mremis_emis1 = mremis_params['emis1_in_molcm-3sec-1'].tolist()
+
+    mremis_tstart2 = mremis_params['tstart2_in_seconds'].tolist()
+    mremis_tend2 = mremis_params['tend2_in_seconds'].tolist()
+    mremis_emis2 = mremis_params['emis2_in_molcm-3sec-1'].tolist()
+
+    mremis_tstart3 = mremis_params['tstart3_in_seconds'].tolist()
+    mremis_tend3 = mremis_params['tend3_in_seconds'].tolist()
+    mremis_emis3 = mremis_params['emis3_in_molcm-3sec-1'].tolist()
+
+    mremis_tstart4 = mremis_params['tstart4_in_seconds'].tolist()
+    mremis_tend4 = mremis_params['tend4_in_seconds'].tolist()
+    mremis_emis4 = mremis_params['emis4_in_molcm-3sec-1'].tolist()
+
+    mremis_tstart5 = mremis_params['tstart5_in_seconds'].tolist()
+    mremis_tend5 = mremis_params['tend5_in_seconds'].tolist()
+    mremis_emis5 = mremis_params['emis5_in_molcm-3sec-1'].tolist()
+
+    mremis_tstart6 = mremis_params['tstart6_in_seconds'].tolist()
+    mremis_tend6 = mremis_params['tend6_in_seconds'].tolist()
+    mremis_emis6 = mremis_params['emis6_in_molcm-3sec-1'].tolist()
+
+    mremis = {}
+    for iemis_species in range(0, nemis_species):
+        mremis [mremis_species[iemis_species]] = [mremis_tstart1[iemis_species],mremis_tend1[iemis_species],mremis_emis1[iemis_species]],\
+          [mremis_tstart2[iemis_species],mremis_tend2[iemis_species],mremis_emis2[iemis_species]],\
+          [mremis_tstart3[iemis_species],mremis_tend3[iemis_species],mremis_emis3[iemis_species]],\
+          [mremis_tstart4[iemis_species],mremis_tend4[iemis_species],mremis_emis4[iemis_species]],\
+          [mremis_tstart5[iemis_species],mremis_tend5[iemis_species],mremis_emis5[iemis_species]],\
+          [mremis_tstart6[iemis_species],mremis_tend6[iemis_species],mremis_emis6[iemis_species]]
+
+    all_mremis [iroom] = mremis
+    #print('all_mremis(',iroom,')=',all_mremis[iroom])
+
+# =============================================================================================== #
+
+
+# =============================================================================================== #
+# Integration settings and time control
+
 """
 Integration
 """
-dt = 150                        # Time between outputs (s), simulation may fail if this is too large 
+dt = 150                        # Time between outputs (s), simulation may fail if this is too large
+                                # also used as max_step for the scipy.integrate.ode integrator
 t0 = 0                          # time of day, in seconds from midnight, to start the simulation
-total_seconds_to_integrate = 4800    # how long to run the model in seconds (86400*3 will run 3 days) #JGL: renamed total_[seconds_to_integrate]
+
+total_seconds_to_integrate = 4800   # how long to run the model in seconds (86400*3 will run 3 days)
+                                    # JGL: renamed total_[seconds_to_integrate]
 
 end_of_total_integration = t0+total_seconds_to_integrate
 
+tchem_only = 600 # Set length of chemistry-only integrations between simple treatments
+                 # of transport (assumed separable). NB: MUST BE < 3600 SECONDS
 
-tchem_only = 600 # JGL: Set length of chemistry-only integrations (between simple treatments of transport; assumed separable); NB MUST BE < 3600 SECONDS
-nchem_only = round (total_seconds_to_integrate/tchem_only) # JGL: Calculate nearest whole number of chemistry-only integrations approximating seconds_to_integrate
+nchem_only = round(total_seconds_to_integrate/tchem_only) # JGL: Calculate nearest whole number of chemistry-only
+                                                          # integrations approximating seconds_to_integrate
 if nchem_only == 0:
     nchem_only = 1
-print('total_seconds_to_integrate set to',total_seconds_to_integrate)
-print('tchem_only set to',tchem_only)
-print('nchem_only therefore set to',nchem_only)
+
+# print('total_seconds_to_integrate set to',total_seconds_to_integrate)
+# print('tchem_only set to',tchem_only)
+# print('nchem_only therefore set to',nchem_only)
+
 seconds_to_integrate = tchem_only
-print('seconds_to_integrate set to',seconds_to_integrate)
+# print('seconds_to_integrate set to',seconds_to_integrate)
 
+# =============================================================================================== #
 
-for ichem_only in range (0,nchem_only): #JGL: Loop over chemistry-only integration periods
+# PRIMARY LOOP: run INCHEM-Py in each room for the duration of tchem_only,
+# then run the transport module (`mr_transport.py`), reinitialize the model and
+# run again until end_of_total_integration
+for ichem_only in range (0,nchem_only): # loop over chemistry-only integration periods
     print('ichem_only=',ichem_only)
-    
-    if ichem_only>0:     
+
+    if ichem_only>0:
         #(1) ADD SIMPLE TREATMENT OF TRANSPORT HERE
         if (__name__ == "__main__") and (nroom >=2):
             from modules.mr_transport import calc_transport
-            calc_transport(custom_name,ichem_only,tchem_only,nroom,mrvol)
-            
-        #(2) Update t0; adjust time of day to start simulation (seconds from midnight), reflecting splitting total_seconds_to_integrate into nchem_only x tchem_only
+            #calc_transport(custom_name,ichem_only,tchem_only,nroom,mrvol)
+
+        #(2) Update t0; adjust time of day to start simulation (seconds from midnight),
+        #    reflecting splitting total_seconds_to_integrate into nchem_only x tchem_only
         t0 = t0 + tchem_only
-    
-    #JGL: Determine time index for tvar_params, itvar_params: NB ASSUMES TCHEM_ONLY < 3600 SECONDS (TIME RESOLUTION OF TVAR_PARAMS DATA) 
+
+    # Determine time index for tvar_params, itvar_params
+    # NB: assumes tchem_only < 3600 seconds (time resolution of tvar_params data)
     end_of_tchem_only = t0 + tchem_only
     t0_corrected = t0-((ceil(t0/86400)-1)*86400)
     end_of_tchem_only_corrected = end_of_tchem_only-((ceil(t0/86400)-1)*86400)
@@ -182,224 +264,240 @@ for ichem_only in range (0,nchem_only): #JGL: Loop over chemistry-only integrati
         if mid_of_tchem_only < 0:
             mid_of_tchem_only = mid_of_tchem_only + 86400
     itvar_params = ceil(mid_of_tchem_only/3600)-1
-    print('t0=',t0)
-    print('end_of_tchem_only=',end_of_tchem_only) 
-    print('mid_of_tchem_only=',mid_of_tchem_only) 
-    print('itvar_params=',itvar_params)       
- 
-    
-    for iroom in range (0,nroom): #JGL: Within each chemistry-only intergation period, loop over rooms
+    # print('t0=',t0)
+    # print('end_of_tchem_only=',end_of_tchem_only)
+    # print('mid_of_tchem_only=',mid_of_tchem_only)
+    # print('itvar_params=',itvar_params)
+
+    # ------------------------------------------------------------------------------------------- #
+
+    # SECONDARY LOOP: for each chemistry-only integration period run INCHEM-Py in each room
+    # and save the output of the run in a separate directory
+    for iroom in range (0,nroom): # loop over rooms
         print('iroom=',iroom)
-    
-    
-        # JGL: Determine temp, rel_humidity and M from tvar_params data
-        temp = all_mrtemp[iroom][itvar_params] # temperature in Kelvin
-        #print('temp=',temp)
-        rel_humidity = all_mrrh[iroom][itvar_params] # relative humidity (presumably in %)
+
+
+        # Set temperature, relative humidity, number density of air (M)
+        # from tvar_params data
+
+        # Temperatures are interpolated from a list of given values (`mr_tvar_room_params_*.csv`)
+        # using either a 'Linear' or a 'BSpline' interpolation method. The list has the format:
+        # [[time (s), temperature (K)],[time (s), temperature (K)], ...]
+        # Alternatively, a constant temperature can also be set without interpolation.
+        # Details of these methods are given in the INCHEM-Py user manual.
+        # Note that in MBM-Flex, temperatures are set as a list of tuples not a list of lists:
+        # this shouldn't make a difference unless the code tries to change the temperature.
+        spline = 'Linear'  # 'Linear' interpolation, by default
+        temperatures = all_mrtemplist[iroom]#[itvar_params] # temperature (Kelvin)
+        #print('temperatures=',temperatures)
+
+        rel_humidity = all_mrrh[iroom][itvar_params] # relative humidity (%)
         #print('rel_humidity=',rel_humidity)
-        M = (all_mrpres[iroom][itvar_params]/(8.3144626*temp))*(6.0221408e23/1e6) # number density of air (molecule cm^-3)
-        #print('M=',M)
-        AER = all_mraer[iroom][itvar_params] # Air exchange rate in [fraction of room] per second
-        #print('AER=',AER)   
-        light_type = mrlightt[iroom].strip()
-        #print('light_type=',light_type)
-        glass = mrglasst[iroom].strip()
-        #print('glass=',glass)
-    
-    
-        AV = (mrsurfa[iroom]/mrvol[iroom])/100 #NB Factor of 1/100 converts units from m-1 to cm-1
-        print('AV=',AV)
-    
-        lotstr='['
-        for ihour in range (0,24):
-            if (ihour==0 and all_mrlswitch[iroom][ihour]==1) or (ihour>0 and all_mrlswitch[iroom][ihour]==1 and all_mrlswitch[iroom][ihour-1]==0):
-                lotstr=lotstr+'['+str(ihour)+','
-            if (ihour>0 and all_mrlswitch[iroom][ihour]==0 and all_mrlswitch[iroom][ihour-1]==1):
-                lotstr=lotstr+str(ihour)+'],'
-            if (ihour==23 and all_mrlswitch[iroom][ihour]==1):
-                lotstr=lotstr+str(ihour+1)+'],'
-        lotstr=lotstr.strip(",")
-        lotstr=lotstr+']'
-        if end_of_total_integration>86400:
-            lotstr=lotstr.strip("[]")
-            nrep=ceil(end_of_total_integration/86400)
-            lotstr='['+((nrep-1)*('['+lotstr+'],'))+'['+lotstr+']]'       
-        print('lotstr=',lotstr)
-        if lotstr=="[]":
-            light_type="off"
-        print('light_type=',light_type)
-        if light_type!="off":
-            light_on_times=eval(lotstr)
-            print('light_on_times=',light_on_times)
-    
 
-        # JGL: Now determining temp, rel_humidity and M from tvar_params
-        #temp = 293.         # temperature in Kelvin
-        #rel_humidity = 50.  # relative humidity
-        #M = 2.51e+19        # number density of air (molecule cm^-3)
-
-
-        #sys.exit()
-
+        Mfact = (all_mrpres[iroom][itvar_params]/8.3144626)*(6.0221408e23/1e6)
+        M = [tuple[1]*Mfact for tuple in temperatures] # number density of air (molecule cm^-3)
+        print('M=',M)
 
         # place any species you wish to remain constant in the below dictionary. Follow the format
-        const_dict = {
-            'O2':0.2095*M,
-            'N2':0.7809*M,
-            'H2':550e-9*M,
-            'saero':1.3e-2, #aerosol surface area concentration
-            'CO':2.5e12,
-            'CH4':4.685E13,
-            'SO2':2.5e10}
+        # const_dict = {
+        #     'O2':0.2095*M,
+        #     'N2':0.7809*M,
+        #     'H2':550e-9*M,
+        #     'saero':1.3e-2 # aerosol surface area concentration
+        #     }
 
-        # JGL: Now determining AER from mr_tvar_params_[room number]
-        """
-        Outdoor indoor exchange
-        """
-        #AER = 0.5/3600  # Air exchange rate per second
-        diurnal = True     # diurnal outdoor concentrations. Boolean
-        city = "Bergen_urban" #source city of outdoor concentrations of O3, NO, NO2, and PM2.5
-        # options are "London_urban", "London_suburban" or "Bergen_urban"
-        # Changes to outdoor concentrations can be done in outdoor_concentrations.py
-        # See the INCHEM-Py manual for details of sources and fits
-    
-        # JGL: Now determining light_type and glass from tcon_params, and light_on_times from tvar_params
-        """
-        Photolysis
-        """
-        date = "21-06-2020"  # day of simulation in format "DD-MM-YYYY"
-        lat = 45.4         # Latitude of simulation location
-        #light_type="Incand"  # Can be "Incand", "Halogen", "LED", "CFL", "UFT", "CFT", "FT", or "off"
-        #"off" sets all light attenuation factors to 0 and therefore no indoor lighting is present.
-        #light_on_times=[[7,19],[31,43],[55,67],[79,91]] 
-        #[[light on time (hours), light off time (hours)],[light on time (hours),light_off_time (hours)],...]
-        #glass="glass_C" # Can be "glass_C", "low_emissivity", "low_emissivity_film", or "no_sunlight".
-        #"no_sunlight" sets all window attenuation factors to 0 and therefore no light enters from outdoors.
+        #ACRate = all_mracrate[iroom][itvar_params] # air change rate (s^-1)
+        #print('ACRate=',ACRate)
 
-        # JGL: Now determining AV from mr_tcon_params
-        """
-        Surface deposition
-        """
+        light_type = mrlightt[iroom]
+        #print('light_type=',light_type)
+
+        glass = mrglasst[iroom]
+        #print('glass=',glass)
+
         # The surface dictionary exists in surface_dictionary.py in the modules folder.
         # To change any surface deposition rates of individual species, or to add species
         # this file must be edited. Production rates can be added as normal reactions
-        # in the custom inputs file. To remove surface deposition AV can be set to 0.
+        # in the custom inputs file. To remove surface deposition AV should be set to 0 and
+        # H2O2_dep and O3_dep should be set to False.
+
         # AV is the surface to volume ratio (cm^-1)
-        #AV = 0.02 #0.01776
+        #AV = 0.02
+
+        # Schemes for deposition of O3 and H2O2 are optionally provided. These schemes
+        # provide calculated surface emissions proportional to O3 and H2O2 deposition
+        # to different surfaces. The schemes can be turned off or on below.
+        # If either scheme is on then AV will be calculated as a sum of the AVs given
+        # for the individual surfaces.
+
+        #surfaces_AV = {             # (cm^-1)
+        #     'AVSOFT' : 0.0035,      # soft furnishings
+        #     'AVPAINT' : 0.0114,     # painted surfaces
+        #     'AVWOOD' : 0.0061,      # wood
+        #     'AVMETAL' : 0.0025,     # metal
+        #     'AVCONCRETE' : 0.0001,  # concrete
+        #     'AVPAPER' : 0.0006,     # paper
+        #     'AVLINO' : 0.0000,      # linoleum
+        #     'AVPLASTIC' : 0.0048,   # plastic
+        #     'AVGLASS' : 0.0009,     # glass
+        #     'AVHUMAN' : 0.0000}     # humans
+
+        # H2O2_dep = True
+        # O3_dep = True
+
+        # '''
+        # Breath emissions from humans
+        # '''
+        # adults = 0     #Number of adults in the room
+        # children = 0   #Number of children in the room (10 years old)
+
+#         AV = (mrsurfa[iroom]/mrvol[iroom])/100 #NB Factor of 1/100 converts units from m^-1 to cm^-1
+#         print('AV=',AV)
+
+#         lotstr='['
+#         for ihour in range (0,24):
+#             if (ihour==0 and all_mrlswitch[iroom][ihour]==1) or (ihour>0 and all_mrlswitch[iroom][ihour]==1 and all_mrlswitch[iroom][ihour-1]==0):
+#                 lotstr=lotstr+'['+str(ihour)+','
+#             if (ihour>0 and all_mrlswitch[iroom][ihour]==0 and all_mrlswitch[iroom][ihour-1]==1):
+#                 lotstr=lotstr+str(ihour)+'],'
+#             if (ihour==23 and all_mrlswitch[iroom][ihour]==1):
+#                 lotstr=lotstr+str(ihour+1)+'],'
+#         lotstr=lotstr.strip(",")
+#         lotstr=lotstr+']'
+#         if end_of_total_integration>86400:
+#             lotstr=lotstr.strip("[]")
+#             nrep=ceil(end_of_total_integration/86400)
+#             lotstr='['+((nrep-1)*('['+lotstr+'],'))+'['+lotstr+']]'
+#         print('lotstr=',lotstr)
+#         if lotstr=="[]":
+#             light_type="off"
+#         print('light_type=',light_type)
+#         if light_type!="off":
+#             light_on_times=eval(lotstr)
+#             print('light_on_times=',light_on_times)
 
 
-        # JGL: Moved settings re init concs inside ichem_only loop; after first chem-only integration, init concs taken from previous output
-        #"""
-        #Initial concentrations in molecules/cm^3 saved in a text file
-        #"""
-        #initials_from_run = False
-        ## initial gas concentrations can be taken from a previous run of the model. 
-        ## Set initials_from_run to True if this is the case and move a previous out_data.pickle
-        ## to the main folder and rename to in_data.pickle. The code will then take this
-        ## file and extract the concentrations from the time point closest to t0 as 
-        ## initial conditions.
-
-        ## in_data.pickle must contain all of the species required, including particles if used.
-
-        ## If initials_from_run is set to False then initial gas conditions must be available
-        ## in the file specified by initial_conditions_gas, the inclusion of particles is optional.
-        #initial_conditions_gas = 'initial_concentrations.txt'
+#         # Settings re emissions are outside ichem_only and iroom loops
+#         # timed_inputs assigned below based on room-specific parameter string constructed above
+#         """
+#         Timed concentrations
+#         """
+#         timed_inputs = all_mremis [iroom]
+#         print('timed_inputs=', timed_inputs)
 
 
-        # JGL: Moved settings re emissions outside ichem_only and iroom loops; timed_inputs assigned below based on room-specific parameter string constructed above
-        """
-        Timed concentrations
-        """
-        #timed_emissions = False # is there a species, or set of species that has a forced density change
-        ## at a specific point in time during the integration? If so then this needs to be set to True
-        ## and the dictionary called timed_inputs (below) needs to be populated
+#         """
+#         Output
+#         """
+#         # An output pickle file is automatically saved so that all data can be recovered
+#         # at a later date for analysis.  Applies to folder name and settings file copy name.
+#         custom_name = 'Test_20230602_Serial'
+#         print('custom_name=',custom_name)
 
-        # When using timed emissions it's suggested that the start time and end times are divisible by dt
-        # and that (start time - end time) is larger then 2*dt to avoid the integrator skipping any 
-        # emissions over small periods of time.
+#         # INCHEM-Py calculates the rate constant for each reaction at every time point
+#         # Setting reactions_output to True saves all reactions and their assigned constant
+#         # to reactions.pickle and adds all calculated reaction rates to the out_data.pickle
+#         # file which will increase its size substantially. Surface deposition rates are also
+#         # added to the out_data.pickle file for analysis.
+#         reactions_output = False
 
-        ## the dictionary should be populated as
-        ## timed_inputs = {species1:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]],
-        ##                 species2:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]]}
-        #timed_inputs = {"LIMONENE":[[36720,37320,5e8],[37600,38000,5e8]],
-        #                "APINENE":[[36800,37320,5e8]]}
-        
-        timed_inputs = all_mremis [iroom]
-        print('timed_inputs=', timed_inputs)
-
-
-        # JGL: Moved the following assignment of dt, t0 and seconds_to_integrate higher up
-        #"""
-        #Integration
-        #"""
-        #dt = 120                        # Time between outputs (s), simulation may fail if this is too large 
-                                         # also used as max_step for the scipy.integrate.ode integrator
-        #t0 = 0                          # time of day, in seconds from midnight, to start the simulation
-        #seconds_to_integrate = 86400    # how long to run the model in seconds (86400*3 will run 3 days)
+#         # This function purely outputs a graph to the
+#         # output folder of a list of selected species and a CSV of concentrations.
+#         # If the species do not exist in the run then a key error will cause it to fail
+#         output_graph = True #Boolean
+#         output_species = ['O3',"O3OUT","tsp"]
 
 
-        """
-        Output
-        """
-        # An output pickle file is automatically saved so that all data can be recovered
-        # at a later date for analysis. 
-        custom_name = 'Test_20230602_Serial'
-        print('custom_name=',custom_name)
+#         """
+#         Initial concentrations in molecules/cm^3 saved in a text file
+#         """
+#         #JGL: Moved and updated settings re init concs here
 
-        # This function purely outputs a graph to the 
-        # output folder of a list of selected species and a CSV of concentrations. 
-        # If the species do not exist in the run then a key error will cause it to fail
-        output_graph = True #Boolean
-        output_species = ['O3',"O3OUT","tsp"]
+#         if ichem_only == 0:
+#             initials_from_run = False #JGL: for first chem-only integration, init concs must be taken from initial_conditions_gas; for now, same file/same concs for all rooms
+
+#             # If initials_from_run is set to False then initial gas conditions must be available
+#             # in the file specified by initial_conditions_gas, the inclusion of particles is optional.
+#             initial_conditions_gas = 'initial_concentrations.txt'
 
 
-        """
-        Run the simulation
-        """
+#             # initial gas concentrations can be taken from a previous run of the model.
+#             # Set initials_from_run to True if this is the case and move a previous out_data.pickle
+#             # to the main folder and rename to in_data.pickle. The code will then take this
+#             # file and extract the concentrations from the time point closest to t0 as
+#             # initial conditions.
 
-        
-        """
-        Initial concentrations in molecules/cm^3 saved in a text file #JGL: Moved and updated settings re init concs here
-        """
-        
-        if ichem_only == 0:
-            initials_from_run = False #JGL: for first chem-only integration, init concs must be taken from initial_conditions_gas; for now, same file/same concs for all rooms
-            
-            # If initials_from_run is set to False then initial gas conditions must be available
-            # in the file specified by initial_conditions_gas, the inclusion of particles is optional.
-            initial_conditions_gas = 'initial_concentrations.txt'
-        
-            
-            # initial gas concentrations can be taken from a previous run of the model. 
-            # Set initials_from_run to True if this is the case and move a previous out_data.pickle
-            # to the main folder and rename to in_data.pickle. The code will then take this
-            # file and extract the concentrations from the time point closest to t0 as 
-            # initial conditions.
+#             # in_data.pickle must contain all of the species required, including particles if used.
 
-            # in_data.pickle must contain all of the species required, including particles if used.
-        
-        else:
-            initials_from_run = True #JGL: for all but the first chem-only integration, init concs taken from previous room-specific output
-            #shutil.copyfile('%s/%s/%s' % (path,output_folder,'out_data.pickle'), '%s/%s' % (path,'in_data_c'+str(ichem_only)+'_r'+str(iroom+1)+'.pickle'))
-            
-        #JGL: Moved assignment of path and output_folder to settings.py and passed these to inchem_main.py
-        '''
-        setting the output folder in current working directory
-        '''
-        path=os.getcwd()
-        now = datetime.datetime.now()
-        #output_folder = ("%s_%s" % (now.strftime("%Y%m%d_%H%M%S"), custom_name))
-        output_folder = ("%s_%s_%s" % (custom_name,'c'+str(ichem_only),'r'+str(iroom+1))) # JGL: Includes chemistry-only integration number and room number)
-        os.mkdir('%s/%s' % (path,output_folder))
-        with open('%s/__init__.py' % output_folder,'w') as f:
-            pass
-        print('Creating folder:', output_folder)
+#         else:
+#             initials_from_run = True #JGL: for all but the first chem-only integration, init concs taken from previous room-specific output
+#             #shutil.copyfile('%s/%s/%s' % (path,output_folder,'out_data.pickle'), '%s/%s' % (path,'in_data_c'+str(ichem_only)+'_r'+str(iroom+1)+'.pickle'))
 
+#         #JGL: Moved assignment of path and output_folder to settings.py and passed these to inchem_main.py
 
-        if __name__ == "__main__":
-            from modules.inchem_main import run_inchem
-            run_inchem(filename, particles, INCHEM_additional, custom, temp, rel_humidity,
-                       M, const_dict, AER, diurnal, city, date, lat, light_type, 
-                       light_on_times, glass, AV, initials_from_run,
-                       initial_conditions_gas, timed_emissions, timed_inputs, dt, t0, iroom, ichem_only, path, output_folder, #JGL added iroom, ichem_only, path and output_folder
-                       seconds_to_integrate, custom_name, output_graph, output_species)
+#         '''
+#         setting the output folder in current working directory
+#         '''
+#         path=os.getcwd()
+#         now = datetime.datetime.now()
+#         #output_folder = ("%s_%s" % (now.strftime("%Y%m%d_%H%M%S"), custom_name))
+#         output_folder = ("%s_%s_%s" % (custom_name,'c'+str(ichem_only),'r'+str(iroom+1))) # JGL: Includes chemistry-only integration number and room number)
+#         os.mkdir('%s/%s' % (path,output_folder))
+#         with open('%s/__init__.py' % output_folder,'w') as f:
+#             pass
+#         print('Creating folder:', output_folder)
+
+        print(filename)
+        print(particles)
+        print(INCHEM_additional)
+        print(custom)
+        print(temperatures)
+        print(rel_humidity)
+        print(M)
+        #print(const_dict)
+        # print(ACRate)
+        print(diurnal)
+        print(city)
+        print(date)
+        print(lat)
+        print(light_type)
+          # print(light_on_times)
+        print(glass)
+          # print(AV)
+          # print(initials_from_run)
+          # print(initial_conditions_gas)
+          # print(timed_emissions)
+          # print(timed_inputs)
+          # print(dt)
+          # print(t0)
+          # print(iroom)
+          # print(ichem_only)
+          # print(path)
+          # print(output_folder)
+          # print(seconds_to_integrate)
+          # print(custom_name)
+          # print(output_graph)
+          # print(output_species)
+          # print(reactions_output)
+          # print(H2O2_dep)
+          # print(O3_dep)
+          # print(adults)
+          # print(children)
+          # print(surfaces_AV)
+          # print(__file__)
+        print(temperatures)
+        print(spline)
+        print("---------------------")
+#         """
+#         Run the simulation
+#         """
+#         if __name__ == "__main__":
+#             from modules.inchem_main import run_inchem
+#             run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
+#                        M, const_dict, ACRate, diurnal, city, date, lat, light_type,
+#                        light_on_times, glass, AV, initials_from_run,
+#                        initial_conditions_gas, timed_emissions, timed_inputs, dt, t0,
+#                        iroom, ichem_only, path, output_folder,
+#                        seconds_to_integrate, custom_name, output_graph, output_species,
+#                        reactions_output, H2O2_dep, O3_dep, adults,
+#                        children, surfaces_AV, __file__, temperatures, spline)
