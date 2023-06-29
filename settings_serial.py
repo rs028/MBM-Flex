@@ -231,7 +231,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
     #print('ichem_only=',ichem_only)
 
     if ichem_only > 0:
-        #(1) ADD SIMPLE TREATMENT OF TRANSPORT HERE
+        #(1) Add simple treatment of transport between rooms here
         if (__name__ == "__main__") and (nroom >= 2):
             from modules.mr_transport import calc_transport
             #calc_transport(custom_name,ichem_only,tchem_only,nroom,mrvol)
@@ -257,17 +257,15 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
     # print('mid_of_tchem_only=',mid_of_tchem_only)
     # print('itvar_params=',itvar_params)
 
-    # ------------------------------------------------------------------------------------------- #
-
+    # ----------------------------------------------------------------------------- #
     # SECONDARY LOOP: for each chemistry-only integration period run INCHEM-Py in each room
     # and save the output of the run in a separate directory
     for iroom in range (0,nroom): # loop over rooms
         #print('iroom=',iroom)
 
-
-        # Set temperature, relative humidity, number density of air (M)
-        # from tvar_params data
-
+        """
+        
+        """
         # Temperatures are interpolated from a list of given values (`mr_tvar_room_params_*.csv`)
         # using either a 'Linear' or a 'BSpline' interpolation method. The list has the format:
         # [[time (s), temperature (K)],[time (s), temperature (K)], ...]
@@ -286,7 +284,8 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         M = [tuple[1]*Mfact for tuple in temperatures] # number density of air (molecule cm^-3)
         #print('M=',M)
 
-        # place any species you wish to remain constant in the below dictionary. Follow the format
+        # TODO : this doesn't work because M is a list not a single number 
+        # Place any species you wish to remain constant in the below dictionary. Follow the format.
         # const_dict = {
         #     'O2':0.2095*M,
         #     'N2':0.7809*M,
@@ -294,53 +293,20 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         #     'saero':1.3e-2 # aerosol surface area concentration
         #     }
 
+        """
+        Outdoor indoor change rates
+        """
         #ACRate = all_mracrate[iroom][itvar_params] # air change rate (s^-1)
         #print('ACRate=',ACRate)
 
+        """
+        Photolysis
+        """
         light_type = mrlightt[iroom]
         #print('light_type=',light_type)
 
         glass = mrglasst[iroom]
         #print('glass=',glass)
-
-        # The surface dictionary exists in surface_dictionary.py in the modules folder.
-        # To change any surface deposition rates of individual species, or to add species
-        # this file must be edited. Production rates can be added as normal reactions
-        # in the custom inputs file. To remove surface deposition AV should be set to 0 and
-        # H2O2_dep and O3_dep should be set to False.
-
-        # AV is the surface to volume ratio (cm^-1)
-        #AV = 0.02
-
-        # Schemes for deposition of O3 and H2O2 are optionally provided. These schemes
-        # provide calculated surface emissions proportional to O3 and H2O2 deposition
-        # to different surfaces. The schemes can be turned off or on below.
-        # If either scheme is on then AV will be calculated as a sum of the AVs given
-        # for the individual surfaces.
-
-        #surfaces_AV = {             # (cm^-1)
-        #     'AVSOFT' : 0.0035,      # soft furnishings
-        #     'AVPAINT' : 0.0114,     # painted surfaces
-        #     'AVWOOD' : 0.0061,      # wood
-        #     'AVMETAL' : 0.0025,     # metal
-        #     'AVCONCRETE' : 0.0001,  # concrete
-        #     'AVPAPER' : 0.0006,     # paper
-        #     'AVLINO' : 0.0000,      # linoleum
-        #     'AVPLASTIC' : 0.0048,   # plastic
-        #     'AVGLASS' : 0.0009,     # glass
-        #     'AVHUMAN' : 0.0000}     # humans
-
-        # H2O2_dep = True
-        # O3_dep = True
-
-        # '''
-        # Breath emissions from humans
-        # '''
-        # adults = 0     #Number of adults in the room
-        # children = 0   #Number of children in the room (10 years old)
-
-#         AV = (mrsurfa[iroom]/mrvol[iroom])/100 #NB Factor of 1/100 converts units from m^-1 to cm^-1
-#         print('AV=',AV)
 
 #         lotstr='['
 #         for ihour in range (0,24):
@@ -364,48 +330,52 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
 #             light_on_times=eval(lotstr)
 #             print('light_on_times=',light_on_times)
 
+        """
+        Surface deposition
+        """
+        # The surface dictionary exists in surface_dictionary.py in the modules folder.
+        # To change any surface deposition rates of individual species, or to add species
+        # this file must be edited. Production rates can be added as normal reactions
+        # in the custom inputs file. To remove surface deposition AV should be set to 0 and
+        # H2O2_dep and O3_dep should be set to False.
 
-#         # Settings re emissions are outside ichem_only and iroom loops
-#         # timed_inputs assigned below based on room-specific parameter string constructed above
-    #    # the dictionary should be populated as
-        # timed_inputs = {species1:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]],
-        #                 species2:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]]}
-        # each species can be emitted in 6 separate intervals with an emission rate in molecule cm^-3 s^-1
-        # different chemical species can be emitted in each room
-#         """
-#         Timed concentrations
-#         """
-#         timed_inputs = all_mremis [iroom]
-#         print('timed_inputs=', timed_inputs)
+        # AV is the surface to volume ratio (cm^-1)
+        #AV = 0.02
 
-
-#         """
-#         Output
-#         """
-#         # An output pickle file is automatically saved so that all data can be recovered
-#         # at a later date for analysis.  Applies to folder name and settings file copy name.
-#         custom_name = 'Test_20230602_Serial'
-#         print('custom_name=',custom_name)
-
-#         # INCHEM-Py calculates the rate constant for each reaction at every time point
-#         # Setting reactions_output to True saves all reactions and their assigned constant
-#         # to reactions.pickle and adds all calculated reaction rates to the out_data.pickle
-#         # file which will increase its size substantially. Surface deposition rates are also
-#         # added to the out_data.pickle file for analysis.
-#         reactions_output = False
-
-#         # This function purely outputs a graph to the
-#         # output folder of a list of selected species and a CSV of concentrations.
-#         # If the species do not exist in the run then a key error will cause it to fail
-#         output_graph = True #Boolean
-#         output_species = ['O3',"O3OUT","tsp"]
+#         AV = (mrsurfa[iroom]/mrvol[iroom])/100 #NB Factor of 1/100 converts units from m^-1 to cm^-1
+#         print('AV=',AV)
 
 
-#         """
-#         Initial concentrations in molecules/cm^3 saved in a text file
-#         """
-#         #JGL: Moved and updated settings re init concs here
+        # Schemes for deposition of O3 and H2O2 are optionally provided. These schemes
+        # provide calculated surface emissions proportional to O3 and H2O2 deposition
+        # to different surfaces. The schemes can be turned off or on below.
+        # If either scheme is on then AV will be calculated as a sum of the AVs given
+        # for the individual surfaces.
 
+        #surfaces_AV = {             # (cm^-1)
+        #     'AVSOFT' : 0.0035,      # soft furnishings
+        #     'AVPAINT' : 0.0114,     # painted surfaces
+        #     'AVWOOD' : 0.0061,      # wood
+        #     'AVMETAL' : 0.0025,     # metal
+        #     'AVCONCRETE' : 0.0001,  # concrete
+        #     'AVPAPER' : 0.0006,     # paper
+        #     'AVLINO' : 0.0000,      # linoleum
+        #     'AVPLASTIC' : 0.0048,   # plastic
+        #     'AVGLASS' : 0.0009,     # glass
+        #     'AVHUMAN' : 0.0000}     # humans
+
+        # H2O2_dep = True
+        # O3_dep = True
+
+        """
+        Breath emissions from humans
+        """
+        # adults = 0     #Number of adults in the room
+        # children = 0   #Number of children in the room (10 years old)
+
+        """
+        Initial concentrations in molecules/cm^3 saved in a text file
+        """
 #         if ichem_only == 0:
 #             initials_from_run = False #JGL: for first chem-only integration, init concs must be taken from initial_conditions_gas; for now, same file/same concs for all rooms
 
@@ -426,7 +396,41 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
 #             initials_from_run = True #JGL: for all but the first chem-only integration, init concs taken from previous room-specific output
 #             #shutil.copyfile('%s/%s/%s' % (path,output_folder,'out_data.pickle'), '%s/%s' % (path,'in_data_c'+str(ichem_only)+'_r'+str(iroom+1)+'.pickle'))
 
-#         #JGL: Moved assignment of path and output_folder to settings.py and passed these to inchem_main.py
+        """
+        Timed concentrations
+        """
+        # Set switch for timed concentrations if there is a species, or set of species that has a
+        # forced density changeat a specific point in time during the integration 
+        # The timed concentrations inputs are assigned using a dictionary with the following format:
+        #
+        # timed_inputs = {species1:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]],
+        #                 species2:[[start time (s), end time (s), rate of increase in (mol/cm^3)/s]]}
+        timed_emissions = all_timemis[iroom]
+        #print(timed_emissions)
+
+        timed_inputs = all_mremis[iroom]
+        #print('timed_inputs=', timed_inputs)
+
+        """
+        Output
+        """
+        # An output pickle file is automatically saved so that all data can be recovered
+        # at a later date for analysis. Applies to folder name and settings file copy name.
+        custom_name = 'Test_20230629_Serial'
+        print('custom_name=',custom_name)
+
+        # INCHEM-Py calculates the rate constant for each reaction at every time point
+        # Setting reactions_output to True saves all reactions and their assigned constant
+        # to reactions.pickle and adds all calculated reaction rates to the out_data.pickle
+        # file which will increase its size substantially. Surface deposition rates are also
+        # added to the out_data.pickle file for analysis.  
+        reactions_output = True
+
+        # This function purely outputs a graph to the 
+        # output folder of a list of selected species and a CSV of concentrations. 
+        # If the species do not exist in the run then a key error will cause it to fail
+        output_graph = True
+        output_species = ['O3','O3OUT','LIMONENE','APINENE']
 
 #         '''
 #         setting the output folder in current working directory
@@ -439,6 +443,12 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
 #         with open('%s/__init__.py' % output_folder,'w') as f:
 #             pass
 #         print('Creating folder:', output_folder)
+
+        # ------------------------------------------------------------------- #
+
+        """
+        Run the simulation
+        """
 
         #print(filename)
         #print(particles)
@@ -459,7 +469,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         # print(AV)
         # print(initials_from_run)
         # print(initial_conditions_gas)
-        # print(timed_emissions)
+        #print(timed_emissions)
         # print(timed_inputs)
         # print(dt)
         # print(t0)
@@ -481,9 +491,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         #print(temperatures)
         #print(spline)
         #print("---------------------")
-#         """
-#         Run the simulation
-#         """
+
 #         if __name__ == "__main__":
 #             from modules.inchem_main import run_inchem
 #             run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
