@@ -38,7 +38,7 @@ from math import ceil
 # Basic model settings
 filename = 'mcm_v331.fac'   # Chemical mechanism file in FACSIMILE format
 
-particles = False   # set to True if particles are included
+particles = True   # set to True if particles are included
 
 INCHEM_additional = True   # set to True to include the additional INCHEM mechanism
 
@@ -54,16 +54,16 @@ city = "Bergen_urban"   # Source city of outdoor concentrations of O3, NO, NO2, 
 
 date = "21-06-2020"   # Day of simulation in format "DD-MM-YYYY"
 
-lat = 45.4   # Latitude of simulation location
+lat = 45   # Latitude of simulation location
 
 # =============================================================================================== #
 # Integration settings and time control
 
-dt = 150     # Time between outputs (s), simulation may fail if this is too large
+dt = 120     # Time between outputs (s), simulation may fail if this is too large
              # also used as max_step for the scipy.integrate.ode integrator
 t0 = 0       # time of day, in seconds from midnight, to start the simulation
 
-total_seconds_to_integrate = 4800   # how long to run the model in seconds (86400*3 will run 3 days)
+total_seconds_to_integrate = 86400   # how long to run the model in seconds (86400*3 will run 3 days)
 
 end_of_total_integration = t0+total_seconds_to_integrate
 
@@ -163,7 +163,7 @@ for iroom in range(0, nroom):
 
     # people in each room variable with time: `mr_tvar_expos_params_*.csv`
     # - number of adults
-    # - number of children
+    # - number of children (10 years old)
     tvar_params = read_csv("config/mr_tvar_expos_params_"+str(iroom+1)+".csv")
 
     secsfrommn = tvar_params['seconds_from_midnight'].tolist()
@@ -265,7 +265,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
     # SECONDARY LOOP: for each chemistry-only integration period run INCHEM-Py in each room
     # and save the output of the run in a separate directory
     for iroom in range (0,nroom): # loop over rooms
-        print('iroom=',iroom)
+        #print('iroom=',iroom)
 
         """
         Temperatures, humidity
@@ -311,27 +311,29 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         glass = mrglasst[iroom]
         #print('glass=',glass)
 
-#         lotstr='['
-#         for ihour in range (0,24):
-#             if (ihour==0 and all_mrlswitch[iroom][ihour]==1) or (ihour>0 and all_mrlswitch[iroom][ihour]==1 and all_mrlswitch[iroom][ihour-1]==0):
-#                 lotstr=lotstr+'['+str(ihour)+','
-#             if (ihour>0 and all_mrlswitch[iroom][ihour]==0 and all_mrlswitch[iroom][ihour-1]==1):
-#                 lotstr=lotstr+str(ihour)+'],'
-#             if (ihour==23 and all_mrlswitch[iroom][ihour]==1):
-#                 lotstr=lotstr+str(ihour+1)+'],'
-#         lotstr=lotstr.strip(",")
-#         lotstr=lotstr+']'
-#         if end_of_total_integration>86400:
-#             lotstr=lotstr.strip("[]")
-#             nrep=ceil(end_of_total_integration/86400)
-#             lotstr='['+((nrep-1)*('['+lotstr+'],'))+'['+lotstr+']]'
-#         print('lotstr=',lotstr)
-#         if lotstr=="[]":
-#             light_type="off"
-#         print('light_type=',light_type)
-#         if light_type!="off":
-#             light_on_times=eval(lotstr)
-#             print('light_on_times=',light_on_times)
+        # TODO: add more comments to this section
+        lotstr='['
+        for ihour in range (0,24):
+            if (ihour==0 and all_mrlswitch[iroom][ihour]==1) or \
+               (ihour>0 and all_mrlswitch[iroom][ihour]==1 and all_mrlswitch[iroom][ihour-1]==0):
+                lotstr=lotstr+'['+str(ihour)+','
+            if (ihour>0 and all_mrlswitch[iroom][ihour]==0 and all_mrlswitch[iroom][ihour-1]==1):
+                lotstr=lotstr+str(ihour)+'],'
+            if (ihour==23 and all_mrlswitch[iroom][ihour]==1):
+                lotstr=lotstr+str(ihour+1)+'],'
+        lotstr=lotstr.strip(",")
+        lotstr=lotstr+']'
+        if end_of_total_integration>86400:
+            lotstr=lotstr.strip("[]")
+            nrep=ceil(end_of_total_integration/86400)
+            lotstr='['+((nrep-1)*('['+lotstr+'],'))+'['+lotstr+']]'
+        #print('lotstr=',lotstr)
+        if lotstr=="[]":
+            light_type="off"
+        #print('light_type=',light_type)
+        if light_type!="off":
+            light_on_times=eval(lotstr)
+            #print('light_on_times=',light_on_times)
 
         """
         Surface deposition
@@ -372,31 +374,32 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         """
         Breath emissions from humans
         """
-        # adults = 0     #Number of adults in the room
-        # children = 0   #Number of children in the room (10 years old)
+        adults = all_mradults[iroom][itvar_params]    #Number of adults in the room
+        children = all_mrchildren[iroom][itvar_params]   #Number of children in the room (10 years old)
 
         """
         Initial concentrations in molecules/cm^3 saved in a text file
         """
-#         if ichem_only == 0:
-#             initials_from_run = False #JGL: for first chem-only integration, init concs must be taken from initial_conditions_gas; for now, same file/same concs for all rooms
+        if ichem_only == 0:
+            # for first chem-only integration, init concs is taken from initial_conditions_gas
+            # for now, same file/same concs for all rooms
+            initials_from_run = False
 
-#             # If initials_from_run is set to False then initial gas conditions must be available
-#             # in the file specified by initial_conditions_gas, the inclusion of particles is optional.
-#             initial_conditions_gas = 'initial_concentrations.txt'
+            # If initials_from_run is set to False then initial gas conditions must be available
+            # in the file specified by initial_conditions_gas, the inclusion of particles is optional.
+            initial_conditions_gas = 'initial_concentrations.txt'
 
 
-#             # initial gas concentrations can be taken from a previous run of the model.
-#             # Set initials_from_run to True if this is the case and move a previous out_data.pickle
-#             # to the main folder and rename to in_data.pickle. The code will then take this
-#             # file and extract the concentrations from the time point closest to t0 as
-#             # initial conditions.
-
-#             # in_data.pickle must contain all of the species required, including particles if used.
-
-#         else:
-#             initials_from_run = True #JGL: for all but the first chem-only integration, init concs taken from previous room-specific output
-#             #shutil.copyfile('%s/%s/%s' % (path,output_folder,'out_data.pickle'), '%s/%s' % (path,'in_data_c'+str(ichem_only)+'_r'+str(iroom+1)+'.pickle'))
+            # initial gas concentrations can be taken from a previous run of the model.
+            # Set initials_from_run to True if this is the case and move a previous out_data.pickle
+            # to the main folder and rename to in_data.pickle. The code will then take this
+            # file and extract the concentrations from the time point closest to t0 as
+            # initial conditions.
+            # in_data.pickle must contain all of the species required, including particles if used.
+        else:
+            # for all but the first chem-only integration, init concs taken from previous room-specific output
+            initials_from_run = True
+            #shutil.copyfile('%s/%s/%s' % (path,output_folder,'out_data.pickle'), '%s/%s' % (path,'in_data_c'+str(ichem_only)+'_r'+str(iroom+1)+'.pickle')) # TODO: uncomment?
 
         """
         Timed concentrations
@@ -433,17 +436,17 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         output_graph = True
         output_species = ['O3','O3OUT','LIMONENE','APINENE']
 
-#         '''
-#         setting the output folder in current working directory
-#         '''
-#         path=os.getcwd()
-#         now = datetime.datetime.now()
-#         #output_folder = ("%s_%s" % (now.strftime("%Y%m%d_%H%M%S"), custom_name))
-#         output_folder = ("%s_%s_%s" % (custom_name,'c'+str(ichem_only),'r'+str(iroom+1))) # JGL: Includes chemistry-only integration number and room number)
-#         os.mkdir('%s/%s' % (path,output_folder))
-#         with open('%s/__init__.py' % output_folder,'w') as f:
-#             pass
-#         print('Creating folder:', output_folder)
+        '''
+        setting the output folder in current working directory
+        '''
+        path=os.getcwd()
+        now = datetime.datetime.now()
+        # folder name: includes chemistry-only integration number and room number
+        output_folder = ("%s_%s_%s" % (custom_name,'c'+str(ichem_only),'r'+str(iroom+1)))
+        # os.mkdir('%s/%s' % (path,output_folder))
+        # with open('%s/__init__.py' % output_folder,'w') as f:
+        #     pass
+        # print('Creating folder:', output_folder)
 
         # ------------------------------------------------------------------- #
 
@@ -451,43 +454,43 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         Run the simulation
         """
 
-        #print(filename)
-        #print(particles)
-        #print(INCHEM_additional)
-        #print(custom)
-        #print(rel_humidity)
-        # print(M)
-        # print(const_dict)
-        #print(ACRate)
-        #print(diurnal)
-        #print(city)
-        #print(date)
-        #print(lat)
-        #print(light_type)
-        # print(light_on_times)
-        #print(glass)
-        #print(AV)
-        # print(initials_from_run)
-        # print(initial_conditions_gas)
-        # print(timed_emissions)
-        # print(timed_inputs)
-        #print(dt)
-        #print(t0)
-        #print(seconds_to_integrate)
-        #print(custom_name)
-        #print(output_graph)
-        #print(output_species)
-        #print(reactions_output)
-        #print(H2O2_dep)
-        #print(O3_dep)
-        # print(adults)
-        # print(children)
-        #print(surfaces_AV)
-        #print(__file__)
-        #print(temperatures)
-        #print(spline)
+print(filename)
+print(particles)
+print(INCHEM_additional)
+print(custom)
+print(rel_humidity)
+print(M)
+print(const_dict)
+print(ACRate)
+print(diurnal)
+print(city)
+print(date)
+print(lat)
+print(light_type)
+print(light_on_times)
+print(glass)
+print(AV)
+print(initials_from_run)
+print(initial_conditions_gas)
+print(timed_emissions)
+print(timed_inputs)
+print(dt)
+print(t0)
+print(seconds_to_integrate)
+print(custom_name)
+print(output_graph)
+print(output_species)
+print(reactions_output)
+print(H2O2_dep)
+print(O3_dep)
+print(adults)
+print(children)
+print(surfaces_AV)
+#print(__file__)
+print(temperatures)
+print(spline)
 
-        print("---------------------")
+print("---------------------")
 
 #         if __name__ == "__main__":
 #             from modules.inchem_main import run_inchem
