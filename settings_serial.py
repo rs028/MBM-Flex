@@ -59,11 +59,11 @@ lat = 45   # Latitude of simulation location
 # =============================================================================================== #
 # Integration settings and time control
 
-dt = 120     # Time between outputs (s), simulation may fail if this is too large
+dt = 150     # Time between outputs (s), simulation may fail if this is too large
              # also used as max_step for the scipy.integrate.ode integrator
 t0 = 0       # time of day, in seconds from midnight, to start the simulation
 
-total_seconds_to_integrate = 86400   # how long to run the model in seconds (86400*3 will run 3 days)
+total_seconds_to_integrate = 4800   # how long to run the model in seconds (86400*3 will run 3 days)
 
 end_of_total_integration = t0+total_seconds_to_integrate
 
@@ -443,10 +443,10 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         now = datetime.datetime.now()
         # folder name: includes chemistry-only integration number and room number
         output_folder = ("%s_%s_%s" % (custom_name,'c'+str(ichem_only),'r'+str(iroom+1)))
-        # os.mkdir('%s/%s' % (path,output_folder))
-        # with open('%s/__init__.py' % output_folder,'w') as f:
-        #     pass
-        # print('Creating folder:', output_folder)
+        os.mkdir('%s/%s' % (path,output_folder))
+        with open('%s/__init__.py' % output_folder,'w') as f:
+            pass
+        print('Creating folder:', output_folder)
 
         # ------------------------------------------------------------------- #
 
@@ -454,51 +454,13 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         Run the simulation
         """
 
-print(filename)
-print(particles)
-print(INCHEM_additional)
-print(custom)
-print(rel_humidity)
-print(M)
-print(const_dict)
-print(ACRate)
-print(diurnal)
-print(city)
-print(date)
-print(lat)
-print(light_type)
-print(light_on_times)
-print(glass)
-print(AV)
-print(initials_from_run)
-print(initial_conditions_gas)
-print(timed_emissions)
-print(timed_inputs)
-print(dt)
-print(t0)
-print(seconds_to_integrate)
-print(custom_name)
-print(output_graph)
-print(output_species)
-print(reactions_output)
-print(H2O2_dep)
-print(O3_dep)
-print(adults)
-print(children)
-print(surfaces_AV)
-#print(__file__)
-print(temperatures)
-print(spline)
-
-print("---------------------")
-
-#         if __name__ == "__main__":
-#             from modules.inchem_main import run_inchem
-#             run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
-#                        M, const_dict, ACRate, diurnal, city, date, lat, light_type,
-#                        light_on_times, glass, AV, initials_from_run,
-#                        initial_conditions_gas, timed_emissions, timed_inputs, dt, t0,
-#                        iroom, ichem_only, path, output_folder,
-#                        seconds_to_integrate, custom_name, output_graph, output_species,
-#                        reactions_output, H2O2_dep, O3_dep, adults,
-#                        children, surfaces_AV, __file__, temperatures, spline)
+        if __name__ == "__main__":
+            from modules.inchem_main import run_inchem
+            run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
+                       M, const_dict, ACRate, diurnal, city, date, lat, light_type,
+                       light_on_times, glass, AV, initials_from_run,
+                       initial_conditions_gas, timed_emissions, timed_inputs, dt, t0,
+                       iroom, ichem_only, path, output_folder,
+                       seconds_to_integrate, custom_name, output_graph, output_species,
+                       reactions_output, H2O2_dep, O3_dep, adults,
+                       children, surfaces_AV, __file__, temperatures, spline)
