@@ -1,4 +1,4 @@
-﻿room_number,volume_in_m3,surf_area_in_m2,light_type,glass_type,percent_soft,percent_paint,percent_wood,percent_metal,percent_concrete,percent_paper,percent_plastic,percent_glass,percent_lino
-1,27,54,Incand,glass_C,0,0,0,0,0,0,0,0,0
-2,27,54,Incand,glass_C,0,0,0,0,0,0,0,0,0
+﻿room_number,volume_in_m3,surf_area_in_m2,light_type,glass_type,percent_soft,percent_paint,percent_wood,percent_metal,percent_concrete,percent_paper,percent_lino,percent_plastic,percent_glass
+1,27,54,Halogen,glass_C,20,80,0,0,0,0,0,0,0
+2,27,54,Incand,low_emissivity,0,0,0,50,0,30,20,0,0
 3,27,54,Incand,glass_C,0,0,0,0,0,0,0,0,0
