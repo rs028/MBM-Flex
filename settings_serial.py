@@ -30,8 +30,6 @@ import os
 import datetime
 from pandas import read_csv
 from math import ceil
-#import shutil
-#import sys
 
 # =============================================================================================== #
 
@@ -54,7 +52,7 @@ city = "Bergen_urban"   # Source city of outdoor concentrations of O3, NO, NO2, 
 
 date = "21-06-2020"   # Day of simulation in format "DD-MM-YYYY"
 
-lat = 45   # Latitude of simulation location
+lat = 45.4   # Latitude of simulation location
 
 # =============================================================================================== #
 # Integration settings and time control
@@ -67,7 +65,7 @@ total_seconds_to_integrate = 4800   # how long to run the model in seconds (8640
 
 end_of_total_integration = t0+total_seconds_to_integrate
 
- # Set length of chemistry-only integrations between simple treatments of transport (assumed separable)
+# Set length of chemistry-only integrations between simple treatments of transport (assumed separable)
 tchem_only = 600     # MUST BE < 3600 SECONDS
 
 # Calculate nearest whole number of chemistry-only integrations, approximating seconds_to_integrate
@@ -130,9 +128,9 @@ all_mrchildren = []
 all_mremis = {}
 all_timemis = []
 
-for iroom in range(0, nroom):
+for iroom in range(0,nroom):
 
-    # physical parameters of each room variable with time: `mr_tvar_room_params_*.csv`
+    # Physical parameters of each room variable with time: `mr_tvar_room_params_*.csv`
     # - temperature (K)
     # - relative humidity (%)
     # - pressure (Pa)
@@ -161,7 +159,7 @@ for iroom in range(0, nroom):
     all_mrlswitch.append(mrlswitch)
     #print('all_mracrate=',all_mracrate)
 
-    # people in each room variable with time: `mr_tvar_expos_params_*.csv`
+    # People in each room variable with time: `mr_tvar_expos_params_*.csv`
     # - number of adults
     # - number of children (10 years old)
     tvar_params = read_csv("config/mr_tvar_expos_params_"+str(iroom+1)+".csv")
@@ -174,7 +172,7 @@ for iroom in range(0, nroom):
     all_mrchildren.append(mrchildren)
     #print('all_mradults=',all_mradults)
 
-    # emissions of chemical species in each room variable with time: `mr_room_emis_params_*.csv`
+    # Emissions of chemical species in each room variable with time: `mr_room_emis_params_*.csv`
     #
     # NB: when using timed emissions it's suggested that the start time and end times are
     # divisible by dt and that (start time - end time) is larger then 2*dt to avoid the
@@ -182,40 +180,16 @@ for iroom in range(0, nroom):
     mremis_params = read_csv("config/mr_room_emis_params_"+str(iroom+1)+".csv")
 
     mremis_species = mremis_params['species'].tolist()
-    nemis_species = len(mremis_species)
 
-    mremis_tstart1 = mremis_params['tstart1_in_seconds'].tolist()
-    mremis_tend1 = mremis_params['tend1_in_seconds'].tolist()
-    mremis_emis1 = mremis_params['emis1_in_molcm-3sec-1'].tolist()
-
-    mremis_tstart2 = mremis_params['tstart2_in_seconds'].tolist()
-    mremis_tend2 = mremis_params['tend2_in_seconds'].tolist()
-    mremis_emis2 = mremis_params['emis2_in_molcm-3sec-1'].tolist()
-
-    mremis_tstart3 = mremis_params['tstart3_in_seconds'].tolist()
-    mremis_tend3 = mremis_params['tend3_in_seconds'].tolist()
-    mremis_emis3 = mremis_params['emis3_in_molcm-3sec-1'].tolist()
-
-    mremis_tstart4 = mremis_params['tstart4_in_seconds'].tolist()
-    mremis_tend4 = mremis_params['tend4_in_seconds'].tolist()
-    mremis_emis4 = mremis_params['emis4_in_molcm-3sec-1'].tolist()
-
-    mremis_tstart5 = mremis_params['tstart5_in_seconds'].tolist()
-    mremis_tend5 = mremis_params['tend5_in_seconds'].tolist()
-    mremis_emis5 = mremis_params['emis5_in_molcm-3sec-1'].tolist()
-
-    mremis_tstart6 = mremis_params['tstart6_in_seconds'].tolist()
-    mremis_tend6 = mremis_params['tend6_in_seconds'].tolist()
-    mremis_emis6 = mremis_params['emis6_in_molcm-3sec-1'].tolist()
+    mremis_tmp = {}
+    for column in mremis_params.columns[1:]:
+        tstart = int(column[5:])
+        tstop = tstart + 3600 - 1
+        mremis_tmp[column] = [[tstart,tstop,value] for value in mremis_params[column].tolist()]
 
     mremis = {}
-    for iemis_species in range(0, nemis_species):
-        mremis [mremis_species[iemis_species]] = [mremis_tstart1[iemis_species],mremis_tend1[iemis_species],mremis_emis1[iemis_species]],\
-          [mremis_tstart2[iemis_species],mremis_tend2[iemis_species],mremis_emis2[iemis_species]],\
-          [mremis_tstart3[iemis_species],mremis_tend3[iemis_species],mremis_emis3[iemis_species]],\
-          [mremis_tstart4[iemis_species],mremis_tend4[iemis_species],mremis_emis4[iemis_species]],\
-          [mremis_tstart5[iemis_species],mremis_tend5[iemis_species],mremis_emis5[iemis_species]],\
-          [mremis_tstart6[iemis_species],mremis_tend6[iemis_species],mremis_emis6[iemis_species]]
+    for i, species in enumerate(mremis_species):
+        mremis[species] = [mremis_tmp[column][i] for column in mremis_params.columns[1:]]
 
     all_mremis[iroom] = mremis
     #print('all_mremis(',iroom,')=',all_mremis[iroom])
@@ -238,7 +212,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         #(1) Add simple treatment of transport between rooms here
         if (__name__ == "__main__") and (nroom >= 2):
             from modules.mr_transport import calc_transport
-            #calc_transport(custom_name,ichem_only,tchem_only,nroom,mrvol) # TODO
+            calc_transport(custom_name,ichem_only,tchem_only,nroom,mrvol)
 
         #(2) Update t0; adjust time of day to start simulation (seconds from midnight),
         #    reflecting splitting total_seconds_to_integrate into nchem_only x tchem_only
@@ -369,7 +343,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
                        'AVPLASTIC'  : AV*mrplastic[iroom]/100,   # plastic
                        'AVGLASS'    : AV*mrglass[iroom]/100,     # glass
                        'AVHUMAN'    : 0.0000          # humans
-                       } # TODO: calculate AVHUMAN from number of people in the room (note that this changes with time)
+                       } # TODO: calculate AVHUMAN from number of people in the room? (note that this changes with time)
 
         """
         Breath emissions from humans
@@ -395,11 +369,10 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
             # to the main folder and rename to in_data.pickle. The code will then take this
             # file and extract the concentrations from the time point closest to t0 as
             # initial conditions.
-            # in_data.pickle must contain all of the species required, including particles if used.
+            # NB: in_data.pickle must contain all of the species required, including particles if used.
         else:
             # for all but the first chem-only integration, init concs taken from previous room-specific output
             initials_from_run = True
-            #shutil.copyfile('%s/%s/%s' % (path,output_folder,'out_data.pickle'), '%s/%s' % (path,'in_data_c'+str(ichem_only)+'_r'+str(iroom+1)+'.pickle')) # TODO: uncomment?
 
         """
         Timed concentrations
@@ -437,7 +410,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         output_species = ['O3','O3OUT','LIMONENE','APINENE']
 
         '''
-        setting the output folder in current working directory
+        Set the output folder in the current working directory
         '''
         path=os.getcwd()
         now = datetime.datetime.now()

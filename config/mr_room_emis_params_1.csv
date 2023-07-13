@@ -1,2 +1,2 @@
-species,tstart1_in_seconds,tend1_in_seconds,emis1_in_molcm-3sec-1,tstart2_in_seconds,tend2_in_seconds,emis2_in_molcm-3sec-1,tstart3_in_seconds,tend3_in_seconds,emis3_in_molcm-3sec-1,tstart4_in_seconds,tend4_in_seconds,emis4_in_molcm-3sec-1,tstart5_in_seconds,tend5_in_seconds,emis5_in_molcm-3sec-1,tstart6_in_seconds,tend6_in_seconds,emis6_in_molcm-3sec-1
-LIMONENE,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+species,emis_0,emis_3600,emis_7200,emis_10800,emis_14400,emis_18000,emis_21600,emis_25200,emis_28800,emis_32400,emis_36000,emis_39600,emis_43200,emis_46800,emis_50400,emis_54000,emis_57600,emis_61200,emis_64800,emis_68400,emis_72000,emis_75600,emis_79200,emis_82800
+LIMONENE,0,0,0,0,0,0,0,0,0,0,0,0,0,5.00E+08,0,0,0,0,0,0,0,0,0,0
