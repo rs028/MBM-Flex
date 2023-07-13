@@ -183,7 +183,7 @@ for iroom in range(0,nroom):
 
     mremis_tmp = {}
     for column in mremis_params.columns[1:]:
-        tstart = int(column[5:])
+        tstart = int(column[8:])
         tstop = tstart + 3600 - 1
         mremis_tmp[column] = [[tstart,tstop,value] for value in mremis_params[column].tolist()]
 
