@@ -27,7 +27,8 @@ along with INCHEM-Py.  If not, see <https://www.gnu.org/licenses/>.
 def run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
                M, const_dict, ACRate_dict, diurnal, city, date, lat, light_type, 
                light_on_times, glass, AV, initials_from_run,
-               initial_conditions_gas, timed_emissions, timed_inputs, dt, t0, iroom, ichem_only, path, output_folder, #JGL Added iroom, ichem_only, path and output_folder
+               initial_conditions_gas, timed_emissions, timed_inputs, dt, t0,
+               iroom, ichem_only, path, output_folder,
                seconds_to_integrate, custom_name, output_graph, output_species,
                reactions_output, H2O2_dep, O3_dep, adults, children,
                surfaces_AV, settings_file, temperatures, spline):
@@ -637,7 +638,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
     if ichem_only==0:  #JGL: Only save these files to output folder on first call to inchem_main.py for each room
     
         from shutil import copyfile
-    copyfile(settings_file, "%s/%s/%s_settings.py" % (path,output_folder,custom_name))
+        copyfile(settings_file, "%s/%s/%s_settings.py" % (path,output_folder,custom_name))
         copyfile(filename, "%s/%s/mcm.fac" % (path,output_folder))
     
     
@@ -679,7 +680,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
     h2o,rh = h2o_rh(t0,temp,rel_humidity,numba_exp)   
     
     species,ppool,rate_numba,reactions_numba=import_all(filename) #import from MCM download
-    
+
     pi = 4.0*numba_arctan(1.0) #for photolysis and some rates
     
     # dictionary for evaluating the reaction rates
@@ -754,20 +755,20 @@ def run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
             for i in INCHEM_reactions:
                 f.write("%s\n" % i)
     
-'''
+    '''
     Particles
     '''
     particle_species=[]
     if particles == True:
         #the full MCM or a subset containing at least one of limonene, a-pinene, b-pinene need
-        #to be used, otherwise the calcuations for tsp and anything involving tsp will fail
+        #to be used, otherwise the calculations for tsp and anything involving tsp will fail
         particle_species, particle_reactions, particle_vap_dict, part_calc_dict = particle_import(species)
         species = species + particle_species #add particle species to species list
         reactions_numba = reactions_check(reactions_numba,particle_reactions,species)
         rate_numba = rate_numba + [['kacid' , '1.5e-32*numba_exp(14770/temp)']]
         calc_dict.update(particle_vap_dict)    
     
-'''
+    '''
     Optional H2O2 and O3 deposition
     '''
     if H2O2_dep == True:
@@ -913,13 +914,14 @@ def run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
                         timed_dict["%s_timed" % key] = 0
             else:
                 print('%s not found in species list (timed input)' % key)
-    
+
     '''
     importing initial concentrations
     '''
     density_dict,calc_dict = initial_conditions(initial_conditions_gas,M,species,\
                                                 rate_numba,calc_dict,particles,\
-                                                    initials_from_run,t0,path, iroom,ichem_only,custom_name) #JGL: Added iroom
+                                                initials_from_run,t0,path,iroom,\
+                                                ichem_only,custom_name)
     density_dict['RO2']=ppool_density_calc(density_dict,ppool)
     
     #calculating t0 summations

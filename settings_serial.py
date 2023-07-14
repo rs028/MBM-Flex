@@ -34,7 +34,7 @@ from math import ceil
 # =============================================================================================== #
 
 # Basic model settings
-filename = 'mcm_v331.fac'   # Chemical mechanism file in FACSIMILE format
+filename = 'mcm_subset.fac'   # Chemical mechanism file in FACSIMILE format
 
 particles = True   # set to True if particles are included
 
@@ -435,5 +435,5 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
                        initial_conditions_gas, timed_emissions, timed_inputs, dt, t0,
                        iroom, ichem_only, path, output_folder,
                        seconds_to_integrate, custom_name, output_graph, output_species,
-                       reactions_output, H2O2_dep, O3_dep, adults,
-                       children, surfaces_AV, __file__, temperatures, spline)
+                       reactions_output, H2O2_dep, O3_dep, adults, children,
+                       surfaces_AV, __file__, temperatures, spline)
