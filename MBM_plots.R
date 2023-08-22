@@ -1,7 +1,17 @@
+## ---------------------------------------------------------------------
 ## R script to plot the output of MBM-Flex
 ##
-## NB: execute from the MBM-Flex directory
-## ----------------------------------------
+## Usage:
+## 1) set the directory containing the model output (`main.output`)
+## 2) set the name of the pdf file for the plots (`pdfname`)
+## 3) by default, the pdf file is saved in the same directory as the
+##    csv files ("extracted_outputs/" in the `main_output` directory)
+## 4) source the script from the MBM-Flex directory
+##
+## The script plots all the variables in the csv files (generated
+## using the MBM_extractor.py tool) and saves the plots to a pdf
+## file. The WHO air quality guidelines are also plotted for reference.
+## ---------------------------------------------------------------------
 library(ggplot2)
 library(scales)
 
