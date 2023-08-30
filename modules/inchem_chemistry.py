@@ -509,7 +509,10 @@ INCHEM_reactions=[
 ["9.20e-14*RO2*0.3","NGTERPO2=LIMBNO3"],
 
 #additional surface transformation (Carslaw 2007 https://doi.org/10.1016/j.atmosenv.2006.09.038)
-["4.83E-3*AV","NO2=HONO"],
+#["4.83E-3*AV","NO2=HONO"],  # original INCHEM-Py parametrization
+# Humidity-dependent HONO formation [Mendez et al., Indoor Air, 2017]
+['NO2_SURF','=NO2SURF'],
+["8.0e-20","NO2SURF+H2O=0.5*HONO+0.5*HNO3"],
 
 # new chemistry for lactic acid + OH                   (Freja Oesterstroem, unpublished)               
 #     - based on 3-hydroxy propanoic acid + OH (MCM)                  
