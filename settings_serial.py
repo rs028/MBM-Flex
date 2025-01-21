@@ -64,7 +64,7 @@ date = '21-06-2020'   # Day of simulation in format DD-MM-YYYY
 
 lat = 45.4   # Latitude of simulation location
 
-faspect = 60   # Angle of the front side of the building (in deg N)
+faspect = 60   # Angle of the front side of the building (deg N)
                # 0 if building is facing N, 90 if building is facing E, etc...
 
 Cp_coeff = [0.3,-0.2] # Pressure coefficients of the building [upwind,downwind]
@@ -80,9 +80,9 @@ ambient_temp = 293.0     # ambient temperature (K) is assumed to be constant
                          # NB: the indoor temperature of each room is set in the
                          # corresponding `config_rooms/mr_tvar_room_params_*.csv` file.
 
-# human body surface/volume ratios (in cm^-1)
-bsa_bvi_adult = 0.28   # assume BSA = 1.8 m2 and BVI = 65 L
-bsa_bvi_child = 0.4    # assume BSA = 1.1 m2 and BVI = 28 L
+# Average body surface area of adults and children (m^2)
+bsa_adult = 1.8
+bsa_child = 1.1
 
 # =============================================================================================== #
 # Integration settings and time control
@@ -324,16 +324,17 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
     """
     Transport between rooms
 
-    Accounted starting from the second chemistry-only step
+    Accounted starting from the second chemistry-only step (ichem_only=1, 2, 3, etc...)
     """
     if ichem_only > 0:
+
         # (1) Add simple treatment of transport between rooms here
         if (__name__ == "__main__") and (nroom >= 2):
             # convection flows
             trans_params = set_advection_flows(faspect,Cp_coeff,nroom,tcon_building,lr_sequence,fb_sequence,mrwinddir[itvar_params],mrwindspd[itvar_params],rho)
             # exchange flows
             #trans_params = set_exchange_flows(tcon_building,lr_sequence,fb_sequence,trans_params)
-            calc_transport(output_main_dir,custom_name,ichem_only,tchem_only,nroom,mrvol,trans_params)
+            #calc_transport(output_main_dir,custom_name,ichem_only,tchem_only,nroom,mrvol,trans_params)
             print('==> transport applied at iteration:', ichem_only)
         else:
             print('==> transport not applied at iteration:', ichem_only)
@@ -432,7 +433,7 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         #print('light_on_times=',light_on_times)
 
         """
-        Surface deposition
+        Surface deposition and breath emissions from humans
         """
         # The surface dictionary exists in surface_dictionary.py in the modules folder.
         # To change any surface deposition rates of individual species, or to add species
@@ -443,38 +444,43 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         # Schemes for deposition of O3 and H2O2 are optionally provided. These schemes
         # provide calculated surface emissions proportional to O3 and H2O2 deposition
         # to different surfaces. The schemes can be turned off or on below.
-        # If either scheme is on then AV will be calculated as a sum of the AVs given
+        # If either scheme is on, then AV will be calculated as a sum of the AVs given
         # for the individual surfaces.
 
         # switch H2O2 and O3 deposition on/off
         H2O2_dep = True
         O3_dep = True
 
-        # AV is the surface to volume ratio (cm^-1)
-        AV = (mrsurfa[iroom]/mrvol[iroom])/100 # Factor of 1/100 converts units from m^-1 to cm^-1
+        # Number of adults and children (10 years old) in the room
+        adults = all_mradults[iroom][itvar_params]
+        children = all_mrchildren[iroom][itvar_params]
 
-        # deposition on different types of surface is used only if H2O2 and O3 deposition are active
+        # Surface areas (m^2) of the empty room and of the people in the room, if present
+        surface_room = mrsurfa[iroom]
+        surface_people = (adults*bsa_adult) + (children*bsa_child)
+
+        # Effective volume (m^3) of the room, accounting for the presence of people
+        volume_room = mrvol[iroom] # TODO: remove volume of people from total volume of room
+
+        # Surface to volume ratio of the room (cm^-1) with and without people
+        AV = ((surface_room + surface_people)/volume_room)/100  # Factor of 1/100 converts from m^-1 to cm^-1
+        AV_empty = (surface_room/volume_room)/100
+
+        # Deposition on different types of surface is used only if the H2O2 and O3 deposition switches
+        # (H2O2_dep, O3_dep) are active, otherwise AV is used
         surfaces_AV = {             # (cm^-1)
-                        'AVSOFT'     : AV*mrsoft[iroom]/100,      # soft furnishings
-                        'AVPAINT'    : AV*mrpaint[iroom]/100,     # painted surfaces
-                        'AVWOOD'     : AV*mrwood[iroom]/100,      # wood
-                        'AVMETAL'    : AV*mrmetal[iroom]/100,     # metal
-                        'AVCONCRETE' : AV*mrconcrete[iroom]/100,  # concrete
-                        'AVPAPER'    : AV*mrpaper[iroom]/100,     # paper
-                        'AVLINO'     : AV*mrlino[iroom]/100,      # linoleum
-                        'AVPLASTIC'  : AV*mrplastic[iroom]/100,   # plastic
-                        'AVGLASS'    : AV*mrglass[iroom]/100,     # glass
-                        'AVHUMAN'    : 0.0000          # humans
-                        }
-
-        """
-        Breath emissions from humans
-        """
-        adults = all_mradults[iroom][itvar_params]    # Number of adults
-        children = all_mrchildren[iroom][itvar_params]   # Number of children (10 years old)
-
-        # AV ratio for humans calculated using an average body surface area and volume
-        surfaces_AV['AVHUMAN'] = (adults * bsa_bvi_adult) + (children * bsa_bvi_child)
+                       'AVSOFT'     : AV_empty * mrsoft[iroom]/100,       # soft furnishings
+                       'AVPAINT'    : AV_empty * mrpaint[iroom]/100,      # painted surfaces
+                       'AVWOOD'     : AV_empty * mrwood[iroom]/100,       # wood
+                       'AVMETAL'    : AV_empty * mrmetal[iroom]/100,      # metal
+                       'AVCONCRETE' : AV_empty * mrconcrete[iroom]/100,   # concrete
+                       'AVPAPER'    : AV_empty * mrpaper[iroom]/100,      # paper
+                       'AVLINO'     : AV_empty * mrlino[iroom]/100,       # linoleum
+                       'AVPLASTIC'  : AV_empty * mrplastic[iroom]/100,    # plastic
+                       'AVGLASS'    : AV_empty * mrglass[iroom]/100,      # glass
+                       'AVHUMAN'    : AV - AV_empty   # humans
+                      }
+        #print('surfaces_AV=',surfaces_AV)
 
         """
         Initial concentrations in molecules/cm^3 saved in a text file
@@ -487,7 +493,6 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
             # If initials_from_run is set to False then initial gas conditions must be available
             # in the file specified by initial_conditions_gas. Inclusion of particles is optional.
             initial_conditions_gas = 'initial_concentrations.txt'
-
 
             # initial gas concentrations can be taken from a previous run of the model.
             # Set initials_from_run to True if this is the case and move a previous out_data.pickle
@@ -545,10 +550,10 @@ for ichem_only in range (0,nchem_only): # loop over chemistry-only integration p
         if __name__ == "__main__":
             from modules.inchem_main import run_inchem
             run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
-                        M, const_dict, ACRate, diurnal, city, date, lat, light_type,
-                        light_on_times, glass, AV, initials_from_run,
-                        initial_conditions_gas, timed_emissions, timed_inputs, dt, t0,
-                        iroom, ichem_only, path, output_folder,
-                        seconds_to_integrate, custom_name, output_graph, output_species,
-                        reactions_output, H2O2_dep, O3_dep, adults, children,
-                        surfaces_AV, __file__, temperatures, spline)
+                       M, const_dict, ACRate, diurnal, city, date, lat, light_type,
+                       light_on_times, glass, AV, initials_from_run,
+                       initial_conditions_gas, timed_emissions, timed_inputs, dt, t0,
+                       iroom, ichem_only, path, output_folder,
+                       seconds_to_integrate, custom_name, output_graph, output_species,
+                       reactions_output, H2O2_dep, O3_dep, adults, children,
+                       surfaces_AV, __file__, temperatures, spline)
