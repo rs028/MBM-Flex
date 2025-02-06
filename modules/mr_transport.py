@@ -246,7 +246,6 @@ def flow_advection(io_windspd,oarea,Cd,Cp,air_density):
     print('|-------> delta_P = ', delta_P)
     print('|-------> flow_coeff = ', flow_coeff)
     print('|-------> adv_flow = ', adv_flow)
-    print('============ ')
 
     return adv_flow
 
@@ -288,7 +287,8 @@ def set_advection_flows(faspect,Cp_coeff,nroom,info_building,lr_sequence,fb_sequ
             area_room = info_room['oarea'].values[0]
             # discharge coefficient of the aperture between rooms
             Cd_coeff = 0.7/(1 + i/onum)
-            # calculate advection fluxes
+            # calculate advection fluxes left-to-right
+            print('============\n', info_room)
             if lr_windspd > 0:
                 trans_params.loc[iroom_trans_dest,iroom_trans_orig] = trans_params.loc[iroom_trans_dest,iroom_trans_orig] + flow_advection(lr_windspd,area_room,Cd_coeff,Cp_coeff,air_density)
             elif lr_windspd < 0:
@@ -308,7 +308,8 @@ def set_advection_flows(faspect,Cp_coeff,nroom,info_building,lr_sequence,fb_sequ
             area_room = info_room['oarea'].values[0]
             # discharge coefficient of the aperture between rooms
             Cd_coeff = 0.7/(1 + j/onum)
-            # calculate advection fluxes
+            # calculate advection fluxes front-to-back
+            print('============\n', info_room)
             if fb_windspd > 0:
                 trans_params.loc[iroom_trans_dest,iroom_trans_orig] = trans_params.loc[iroom_trans_dest,iroom_trans_orig] + flow_advection(fb_windspd,area_room,Cd_coeff,Cp_coeff,air_density)
             elif fb_windspd < 0:
@@ -614,13 +615,15 @@ def calc_transport(output_main_dir, custom_name, ichem_only, tchem_only, nroom, 
     # Output concentrations (molecules/cm3) to a restart file to initialise
     # the next integration step of duration `tchem_only`.
 
-    #Loop over all rooms from the point of view of the origin of fluxes; recall, index 0 of output_data_after_transport refers to room 1
+    # Loop over all rooms from the point of view of the origin of fluxes
+    # recall, index 0 of output_data_after_transport refers to room 1
     for iroom_trans_orig in range(0, nroom):
 
-        #Convert numbers of molecules of each species after transport back to concentrations (molecules/cm3), assuming room volume, mrvol, is specified in m3
+        # Convert numbers of molecules of each species after transport back to concentrations (molecules/cm3),
+        # assuming room volume (mrvol) is specified in m3
         data_after_trans[iroom_trans_orig] = data_after_trans[iroom_trans_orig] / (mrvol[iroom_trans_orig] * 1.0E6)
 
-        #Overwrite restart_data.pickle file with concentrations following transport
+        # Overwrite restart_data.pickle file with concentrations following transport
         output_folder = ("%s/%s_%s" % (output_main_dir,'room{:02d}'.format(iroom_trans_orig+1),'c{:04d}'.format(ichem_only-1)))
         with open(("%s/%s" % (output_folder,'restart_data.pickle')),'wb') as handle:
             pickle.dump(data_after_trans[iroom_trans_orig],handle)
