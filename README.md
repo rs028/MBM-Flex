@@ -4,7 +4,7 @@ _  _ ___  _  _    ____ _    ____ _  _
 |  | |__] |  |    |    |___ |___ _/\_
 ```
 
-[![license](https://img.shields.io/github/license/IndoorAir/MBM-Flex?color=green)](https://github.com/IndoorAir/MBM-Flex/blob/master/LICENSE) [![release](https://img.shields.io/github/v/release/IndoorAir/MBM-Flex?color=orange)](https://github.com/IndoorAir/MBM-Flex/releases)
+[![license](https://img.shields.io/github/license/IndoorAir/MBM-Flex?color=green)](https://github.com/IndoorAir/MBM-Flex/blob/master/LICENSE) [![release](https://img.shields.io/github/v/release/IndoorAir/MBM-Flex?color=orange&include_prereleases)](https://github.com/IndoorAir/MBM-Flex/releases)
 
 **MBM-Flex** (MultiBox-Flexible Model) is an indoor air quality model. It was developed as part of the **IAQ-EMS** project, a component of the [UK Clean Air Programme](https://www.ukcleanair.org/). The aim of MBM-Flex is to provide the community with a flexible tool to simulate and investigate indoor air quality and its health impacts.
 
