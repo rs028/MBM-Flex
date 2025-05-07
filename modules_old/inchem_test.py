@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Unit testing for modules and functions used in INCHEM-Py
+Unit testing for modules_old and functions used in INCHEM-Py
 
 Copyright (C) 2019-2021 
 David Shaw : david.shaw@york.ac.uk

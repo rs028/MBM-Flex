@@ -2,7 +2,7 @@ from inchempy.modules.inchem_main import run_inchem
 from typing import Optional, List, Dict, Union, Any
 
 
-class InChemPySettings:
+class InChemPyInstance:
     """
         @brief A class recording all the settings needed for a single InChemPy simulation
 
@@ -47,7 +47,7 @@ class InChemPySettings:
                  reactions_output: bool = True,
                  output_graph: bool = True,
                  output_species: Optional[List[str]] = None,
-                 settings_file: Optional[str] = None):
+                 settings_file: str = __file__):
         """
         @brief Initialize the InChemPySettings class with simulation parameters.
 
@@ -102,13 +102,22 @@ class InChemPySettings:
         self.custom_filename: str = custom_filename
 
         self.spline: Union[str, float] = spline
-        self.temperatures: List[List[float]] = temperatures or []
+        self.temperatures: List[List[float]] = temperatures or [[25200, 288.15], [50400, 294.15]]
         self.rel_humidity: float = rel_humidity
         self.M: float = M
 
-        self.const_dict: Dict[str, float] = const_dict or {}
+        self.const_dict: Dict[str, float] = const_dict or {
+            'O2': 0.2095 * self.M,
+            'N2': 0.7809 * self.M,
+            'H2': 550e-9 * self.M,
+            'saero': 1.3e-2
+        }
 
-        self.ACRate: Dict[int, float] = ACRate or {}
+        self.ACRate: Dict[int, float] = ACRate or {
+            0: 0.5 / 3600,
+            3600 * 24: 1 / 3600,
+            3600 * 48: 2 / 3600
+        }
 
         self.diurnal: bool = diurnal
         self.city: str = city
@@ -116,12 +125,26 @@ class InChemPySettings:
         self.date: str = date
         self.lat: float = lat
         self.light_type: str = light_type
-        self.light_on_times: List[List[int]] = light_on_times or []
+
+        self.light_on_times: List[List[int]] = light_on_times or [[7, 19], [31, 43], [55, 67], [79, 91]]
+
         self.glass: str = glass
 
         self.volume: float = volume
 
-        self.surface_area: Dict[str, float] = surface_area or {}
+        self.surface_area: Dict[str, float] = surface_area or {
+            'SOFT': 10.42e4,
+            'PAINT': 33.76e4,
+            'WOOD': 18.23e4,
+            'METAL': 7.46e4,
+            'CONCRETE': 0.391e4,
+            'PAPER': 1.89e4,
+            'LINO': 0,
+            'PLASTIC': 14.18e4,
+            'GLASS': 2.61e4,
+            'HUMAN': 0,
+            'OTHER': 0
+        }
 
         self.H2O2_dep: bool = H2O2_dep
         self.O3_dep: bool = O3_dep
@@ -133,7 +156,10 @@ class InChemPySettings:
         self.initial_conditions_gas: str = initial_conditions_gas
 
         self.timed_emissions: bool = timed_emissions
-        self.timed_inputs: Dict[str, List[List[Union[int, float]]]] = timed_inputs or {}
+        self.timed_inputs: Dict[str, List[List[Union[int, float]]]] = timed_inputs or {
+            "LIMONENE": [[46800, 47400, 5e10], [107600, 108000, 5e8]],
+            "BPINENE": [[46800, 47400, 5e10]]
+        }
 
         self.constrained_file: Optional[str] = constrained_file
 
@@ -144,7 +170,7 @@ class InChemPySettings:
         self.custom_name: str = custom_name
         self.reactions_output: bool = reactions_output
         self.output_graph: bool = output_graph
-        self.output_species: List[str] = output_species or []
+        self.output_species: List[str] = output_species or ['LIMONENE', 'BPINENE']
 
         self.settings_file: Optional[str] = settings_file
 
