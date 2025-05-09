@@ -34,23 +34,23 @@ def run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
                children, surface_area, settings_file, temperatures, spline):
   
     '''
-    import all modules
+    import all modules_old
     '''
     import sys
     import pickle
-    from modules.inchem_import import import_all, custom_import 
-    from modules.particle_input import particle_import, particle_calcs, reactions_check
-    from modules.photolysis import photolysis_J, Zixu_photolysis, Zixu_photolysis_compiled
-    from modules.initial_dictionaries import initial_conditions, master_calc, master_compiler,\
+    from modules_old.inchem_import import import_all, custom_import
+    from modules_old.particle_input import particle_import, particle_calcs, reactions_check
+    from modules_old.photolysis import photolysis_J, Zixu_photolysis, Zixu_photolysis_compiled
+    from modules_old.initial_dictionaries import initial_conditions, master_calc, master_compiler,\
         reaction_rate_compile, reaction_eval, write_jacobian_build, INCHEM_species_calc
-    from modules.outdoor_concentrations import outdoor_rates, outdoor_rates_diurnal, outdoor_rates_calc,\
+    from modules_old.outdoor_concentrations import outdoor_rates, outdoor_rates_diurnal, outdoor_rates_calc,\
         ACRate_updater
     import numpy as np
     import numba as nb
     from scipy.integrate import ode
     from scipy import interpolate
     import time
-    from modules.surface_dictionary import surface_deposition, O3_deposition, H2O2_deposition, breath_emissions
+    from modules_old.surface_dictionary import surface_deposition, O3_deposition, H2O2_deposition, breath_emissions
     from threadpoolctl import threadpool_limits
     import importlib.util
     import pandas as pd
@@ -58,7 +58,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
     import datetime
     import math
     import time as timing
-    from modules.reactivity import reactivity_summation, reactivity_calc, production_calc
+    from modules_old.reactivity import reactivity_summation, reactivity_calc, production_calc
     import bisect
 
     sys.setrecursionlimit(4000) #to compile the master array the recursion limit
@@ -737,7 +737,7 @@ def run_inchem(filename, particles, INCHEM_additional, custom, rel_humidity,
     INCHEM reactions and rates that are not included in MCM download.
     '''    
     if INCHEM_additional == True:
-        from modules.inchem_chemistry import INCHEM_RO2, INCHEM_reactions, \
+        from modules_old.inchem_chemistry import INCHEM_RO2, INCHEM_reactions, \
             INCHEM_rates, INCHEM_sums
         INCHEM_species = INCHEM_species_calc(INCHEM_reactions,species)
         species = species + INCHEM_species
