@@ -49,7 +49,7 @@ class RoomComposition:
 
         total = soft+paint+wood+metal+concrete+paper+lino+plastic+glass+human+self.other
 
-        if total> 100+1.0e-12 or total< 100-1.0e-12:
+        if total > 100+1.0e-12 or total < 100-1.0e-12:
             raise ValueError("The total did not come to 100% (if you leave \"other\" undefined it will be calculated)")
 
         for name, value in self.surface_area_dictionary(100.0).items():

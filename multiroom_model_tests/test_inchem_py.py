@@ -1,6 +1,6 @@
 import unittest
 from multiroom_model.inchem import InChemPyInstance
-from inchempy import modules
+
 
 class TestInChemPy(unittest.TestCase):
     def test_inchempy_runs(self):
@@ -9,7 +9,6 @@ class TestInChemPy(unittest.TestCase):
             output_graph=False)
 
         inchem_py_instance.run()
-
 
 
 if __name__ == '__main__':

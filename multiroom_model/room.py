@@ -17,10 +17,19 @@ class Room:
 
     composition: RoomComposition
 
+    def __init__(self, volume_in_m3: float,
+                 surf_area_in_m2: float,
+                 light_type: str,
+                 glass_type: str,
+                 composition: RoomComposition):
+        self.volume_in_m3 = volume_in_m3
+        self.surf_area_in_m2 = surf_area_in_m2
+        self.light_type = light_type
+        self.glass_type = glass_type
+        self.composition = composition
 
     def surface_area_dictionary(self):
         return self.composition.surface_area_dictionary(self.surf_area_in_m2)
-
 
 
 def build_rooms(csv_file: str):
@@ -58,12 +67,14 @@ def build_rooms(csv_file: str):
             plastic=mrplastic[i],
             glass=mrglass[i],
             other=mrother[i])
-        r = Room()
-        r.composition = rc
-        r.volume_in_m3 = mrvol[i]
-        r.surf_area_in_m2 = mrsurfa[i]
-        r.glass_type = mrglasst[i]
-        r.light_type = mrlightt[i]
+
+        r = Room(
+            composition=rc,
+            volume_in_m3=mrvol[i],
+            surf_area_in_m2=mrsurfa[i],
+            glass_type=mrglasst[i],
+            light_type=mrlightt[i]
+        )
         result[int(tcon_params['room_number'][i])] = r
 
     return result
