@@ -3,7 +3,9 @@ from typing import Optional
 
 class RoomComposition:
     """
-        @brief A class recording the composition of materials (in percentages) in a single room,
+        @brief A class recording the composition of surface materials (in percentages) in a single room,
+
+        The sum of the values should be equal to 100 (percent)
 
         If you leave "other" undefined, then it will be calculated so the values sum to 100%
 
@@ -47,7 +49,7 @@ class RoomComposition:
         if self.other < 0:
             self.other = 0
 
-        total = soft+paint+wood+metal+concrete+paper+lino+plastic+glass+human+self.other
+        total = sum(self.surface_area_dictionary(100.0).values())
 
         if total > 100+1.0e-12 or total < 100-1.0e-12:
             raise ValueError("The total did not come to 100% (if you leave \"other\" undefined it will be calculated)")
@@ -57,6 +59,11 @@ class RoomComposition:
                 raise ValueError(f"{name} must be a percentage between 0 and 100 (got {value})")
 
     def surface_area_dictionary(self, total_surface_area):
+        """
+            @brief Creates a dictionary of absolute surface areas
+            Uses the percentages stored in the class along with the total area, pass in as a parameter
+
+        """
         return {
             'SOFT': total_surface_area*self.soft/100.0,
             'PAINT': total_surface_area*self.paint/100.0,
