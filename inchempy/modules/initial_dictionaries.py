@@ -358,3 +358,12 @@ def timed_import(timed_inputs):
         for species, emission in species_emission.items():
             timed_reactions.append([f"timed_{i}*({emission[0][2]})",f"= {species}"])
     return timed_reactions, emission_group
+
+
+def undefined_species_dict(compiled_code_dict, density_dict, calc_dict):
+    result = {}
+    for code_block in compiled_code_dict.values():
+        for species in code_block.co_names:
+            if (species not in density_dict and species not in calc_dict):
+                result[species] = 0.0
+    return result
