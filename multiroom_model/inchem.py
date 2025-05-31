@@ -47,7 +47,8 @@ class InChemPyInstance:
                  reactions_output: bool = True,
                  output_graph: bool = True,
                  output_species: Optional[List[str]] = None,
-                 settings_file: str = __file__):
+                 settings_file: str = __file__,
+                 automatically_fix_undefined_species = False):
         """
         @brief Initialize the InChemPySettings class with simulation parameters.
 
@@ -174,6 +175,8 @@ class InChemPyInstance:
 
         self.settings_file: Optional[str] = settings_file
 
+        self.automatically_fix_undefined_species = automatically_fix_undefined_species
+
     def run(self) -> Any:
         return run_inchem(self.filename, self.particles, self.INCHEM_additional, self.custom, self.rel_humidity,
                           self.M, self.const_dict, self.ACRate, self.diurnal, self.city, self.date, self.lat,
@@ -184,4 +187,5 @@ class InChemPyInstance:
                           self.reactions_output, self.H2O2_dep, self.O3_dep, self.adults,
                           self.children, self.surface_area, self.settings_file, self.temperatures, self.spline,
                           self.custom_filename,
-                          self.constrained_file)
+                          self.constrained_file,
+                          self.automatically_fix_undefined_species)
