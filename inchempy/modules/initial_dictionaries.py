@@ -366,7 +366,7 @@ def undefined_species_dict(compiled_code_dict, variables_dict, calc_dict):
     successfully resolved.
     This can be used to add a placeholder for absent species to the
     density dictionary (with 0 density).
-    This in turn cam allow the summations, particle calculations, or reaction
+    This in turn can allow the summations, particle calculations, or reaction
     rates to be calculated despite a reduced model (without the complete MCM).
 
     If a prerequisite of the compiled code is in neither of the 2 provided
