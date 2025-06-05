@@ -1,0 +1,3 @@
+[submodule "INCHEM-Py"]
+	path = INCHEM-Py
+	url = https://github.com/ergoregion/INCHEM-Py
