@@ -69,8 +69,7 @@ class TestInChemPy(unittest.TestCase):
             particles=True,
             INCHEM_additional=False,
             seconds_to_integrate=180,
-            output_graph=False,
-            automatically_fix_undefined_species=True)
+            output_graph=False)
 
         inchem_py_instance.run()
 
@@ -80,8 +79,7 @@ class TestInChemPy(unittest.TestCase):
             particles=True,
             INCHEM_additional=True,
             seconds_to_integrate=180,
-            output_graph=False,
-            automatically_fix_undefined_species=True)
+            output_graph=False)
 
         inchem_py_instance.run()
 
@@ -91,8 +89,7 @@ class TestInChemPy(unittest.TestCase):
             particles=True,
             INCHEM_additional=True,
             seconds_to_integrate=180,
-            output_graph=False,
-            automatically_fix_undefined_species=True)
+            output_graph=False)
 
         inchem_py_instance.run()
 
