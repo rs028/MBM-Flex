@@ -2,7 +2,7 @@ import unittest
 from multiroom_model.inchem import InChemPyInstance
 
 
-class TestInChemPy(unittest.TestCase):
+class TestInChemPyMainMethod(unittest.TestCase):
     def test_inchempy_runs(self):
         inchem_py_instance: InChemPyInstance = InChemPyInstance(
             particles=False,
