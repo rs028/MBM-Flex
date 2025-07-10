@@ -1,5 +1,7 @@
 from inchempy.modules.inchem_main import run_inchem
-from typing import Optional, List, Dict, Union, Any
+from inchempy.modules.inchem_main_class import InChemPyMainClass
+from typing import Optional, List, Dict, Union, Any, Tuple
+from pandas import DataFrame
 
 
 class InChemPyInstance:
@@ -47,8 +49,7 @@ class InChemPyInstance:
                  reactions_output: bool = True,
                  output_graph: bool = True,
                  output_species: Optional[List[str]] = None,
-                 settings_file: str = __file__,
-                 automatically_fix_undefined_species = False):
+                 settings_file: str = __file__):
         """
         @brief Initialize the InChemPySettings class with simulation parameters.
 
@@ -175,8 +176,6 @@ class InChemPyInstance:
 
         self.settings_file: Optional[str] = settings_file
 
-        self.automatically_fix_undefined_species = automatically_fix_undefined_species
-
     def run(self) -> Any:
         return run_inchem(self.filename, self.particles, self.INCHEM_additional, self.custom, self.rel_humidity,
                           self.M, self.const_dict, self.ACRate, self.diurnal, self.city, self.date, self.lat,
@@ -187,5 +186,76 @@ class InChemPyInstance:
                           self.reactions_output, self.H2O2_dep, self.O3_dep, self.adults,
                           self.children, self.surface_area, self.settings_file, self.temperatures, self.spline,
                           self.custom_filename,
-                          self.constrained_file,
-                          self.automatically_fix_undefined_species)
+                          self.constrained_file)
+
+
+default_settings = InChemPyInstance()
+
+
+@staticmethod
+def generate_main_class(
+    filename: str = default_settings.filename,
+    INCHEM_additional: bool = default_settings.INCHEM_additional,
+    particles: bool = default_settings.particles,
+    constrained_file: str = default_settings.constrained_file,
+    output_folder: str = None,
+    dt: float = default_settings.dt,
+    volume: float = default_settings.volume,
+    surface_area: Dict[str, float] = default_settings.surface_area,
+    adults: int = default_settings.adults,
+    children: int = default_settings.children,
+    const_dict: Dict[str, float] = default_settings.const_dict,
+    H2O2_dep: bool = default_settings.H2O2_dep,
+    O3_dep: bool = default_settings.O3_dep,
+    custom: bool = default_settings.custom,
+    timed_emissions: bool = default_settings.timed_emissions,
+    timed_inputs: Dict[str, List[List[Union[int, float]]]] = default_settings.timed_inputs,
+    custom_filename: str = default_settings.custom_filename
+
+) -> InChemPyMainClass:
+    """
+        @brief Generates anInChemPyMainClass with the default settings as defined by the InChemPyInstance
+
+    """
+    return InChemPyMainClass(filename, INCHEM_additional, particles, constrained_file, output_folder, dt,
+                             volume, surface_area, adults, children, const_dict, H2O2_dep, O3_dep,
+                             custom, timed_emissions, timed_inputs, custom_filename)
+
+
+@staticmethod
+def run_main_class(
+    main_class: InChemPyMainClass,
+    t0: float = default_settings.t0,
+    seconds_to_integrate: int = default_settings.seconds_to_integrate,
+    dt: float = default_settings.dt,
+    timed_emissions: bool = default_settings.timed_emissions,
+    timed_inputs: Dict[str, List[List[Union[int, float]]]] = default_settings.timed_inputs,
+    spline: Union[str, float] = default_settings.spline,
+    temperatures: List[List[float]] = default_settings.temperatures,
+    rel_humidity: float = default_settings.rel_humidity,
+    M: float = default_settings.M,
+    light_type: str = default_settings.light_type,
+    glass: str = default_settings.glass,
+    diurnal: bool = default_settings.diurnal,
+    city: str = default_settings.city,
+    date: str = default_settings.date,
+    lat: float = default_settings.lat,
+    ACRate_dict: Dict[int, float] = default_settings.ACRate,
+    light_on_times: List[List[int]] = default_settings.light_on_times,
+    initial_conditions_gas: str = default_settings.initial_conditions_gas,
+    initials_from_run: bool = default_settings.initials_from_run,
+    path: str = None,
+    output_folder: str = None,
+    reactions_output: bool = default_settings.reactions_output,
+    initial_dataframe: Optional[DataFrame] = None
+
+) -> Tuple[DataFrame, DataFrame]:
+    """
+        @brief runs anInChemPyMainClass with the default settings as defined by the InChemPyInstance
+        There is no default path or output folder, so no file writing will happen by default
+
+    """
+    return main_class.run(t0, seconds_to_integrate, dt, timed_emissions, timed_inputs, spline, temperatures,
+                          rel_humidity, M, light_type, glass, diurnal, city, date, lat, ACRate_dict,
+                          light_on_times, initial_conditions_gas, initials_from_run, path,
+                          output_folder, reactions_output, initial_dataframe)

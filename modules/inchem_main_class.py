@@ -1,0 +1,1 @@
+from inchempy.modules.inchem_main_class import *

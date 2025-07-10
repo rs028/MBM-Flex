@@ -1,7 +1,0 @@
-numpy
-numba
-pandas
-tqdm
-scipy
-threadpoolctl
-matplotlib
