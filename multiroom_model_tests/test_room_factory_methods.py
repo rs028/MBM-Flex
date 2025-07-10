@@ -2,6 +2,7 @@ import unittest
 from multiroom_model.roomcomposition import RoomComposition
 from multiroom_model.room import Room
 from multiroom_model.time_dep_value import TimeDependentValue
+from multiroom_model.bracketed_value import TimeBracketedValue
 from multiroom_model.room_factory import (
     build_rooms,
     populate_room_with_emissions_file,
@@ -83,16 +84,20 @@ class TestRoomPopulationIntegration(unittest.TestCase):
             self.assertTrue("LIMONENE" in room.emissions)
             self.assertTrue("BPINENE" in room.emissions)
             for species, tvalue in room.emissions.items():
-                self.assertIsInstance(tvalue, TimeDependentValue, f"{species} should be TimeDependentValue")
+                self.assertIsInstance(tvalue, TimeBracketedValue, f"{species} should be TimeBracketedValue")
 
-            self.assertEqual(len(room.emissions["LIMONENE"].times()), 24)
-            self.assertEqual(len(room.emissions["BPINENE"].times()), 24)
+            self.assertEqual(len(room.emissions["LIMONENE"].values()), 1)
+            self.assertEqual(len(room.emissions["BPINENE"].values()), 1)
 
-            self.assertEqual(room.emissions["LIMONENE"].value_at_time(3600), 0)
-            self.assertEqual(room.emissions["BPINENE"].value_at_time(3600), 0)
 
-            self.assertEqual(room.emissions["LIMONENE"].value_at_time(46800), 5.00E+08)
-            self.assertEqual(room.emissions["BPINENE"].value_at_time(46800), 5.00E+10)
+            self.assertEqual(room.emissions["LIMONENE"].values()[0][0], 46800)
+            self.assertEqual(room.emissions["BPINENE"].values()[0][0], 46800)
+
+            self.assertEqual(room.emissions["LIMONENE"].values()[0][1], 50400)
+            self.assertEqual(room.emissions["BPINENE"].values()[0][1], 50400)
+
+            self.assertEqual(room.emissions["LIMONENE"].values()[0][2], 5.00E+08)
+            self.assertEqual(room.emissions["BPINENE"].values()[0][2], 5.00E+10)
 
     def test_populate_tvar(self):
         for room in self.rooms.values():

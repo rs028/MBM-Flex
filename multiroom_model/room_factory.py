@@ -1,8 +1,11 @@
 from .roomcomposition import RoomComposition
 from .room import Room
 from .time_dep_value import TimeDependentValue
+from.bracketed_value import TimeBracketedValue
 from pandas import read_csv
 import re
+from typing import List, Tuple
+from math import ceil
 
 
 def build_rooms(csv_file: str):
@@ -79,8 +82,13 @@ def populate_room_with_emissions_file(room: Room, csv_file: str):
     room.emissions = {}
 
     for i, s in enumerate(species):
+        r= []
         values = [emis_params[t][i] for t in time_cols]
-        room.emissions[s] = TimeDependentValue(list(zip(times, values)))
+        for j, v in enumerate(values):
+            if (v != 0):
+                r.append(tuple([times[j], times[j+1], v]))
+        room.emissions[s] = TimeBracketedValue(r)
+
 
 
 def populate_room_with_tvar_file(room: Room, csv_file: str):
@@ -105,3 +113,23 @@ def populate_room_with_expos_file(room: Room, csv_file: str):
     times = expos_params["seconds_from_midnight"]
     room.n_adults = TimeDependentValue(list(zip(times, expos_params["n_adults"])))
     room.n_children = TimeDependentValue(list(zip(times, expos_params["n_children"])))
+
+def interpret_light_on_times(room_mrlswitch: List[Tuple[float,float]], end_of_total_integration: float)->List[List[int]]:
+
+    light_on_times =[]
+    
+    for i in range(len(room_mrlswitch.values())-1):
+        if(room_mrlswitch.values()[i]==1):
+            light_on_times.append([room_mrlswitch.times()[i], room_mrlswitch.times()[i+1]])
+    if(room_mrlswitch.values()[-1]==1):
+        light_on_times.append([room_mrlswitch.times()[-1], room_mrlswitch.values()[0]+3600.0])
+                              
+    return light_on_times
+
+    #on_times = [room_mrlswitch.times()[i+1] for i in range(len(room_mrlswitch.values())-1) 
+    #            if (room_mrlswitch.values()[i+1]==1) 
+    #            and (room_mrlswitch.values()[i]==0)]
+    #
+    #off_times = [room_mrlswitch.times()[i+1] for i in range(len(room_mrlswitch.values())-1) 
+    #            if (room_mrlswitch.values()[i+1]==0) 
+    #            and (room_mrlswitch.values()[i]==1)]

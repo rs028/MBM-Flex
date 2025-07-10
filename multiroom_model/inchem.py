@@ -202,8 +202,6 @@ def generate_main_class(
     dt: float = default_settings.dt,
     volume: float = default_settings.volume,
     surface_area: Dict[str, float] = default_settings.surface_area,
-    adults: int = default_settings.adults,
-    children: int = default_settings.children,
     const_dict: Dict[str, float] = default_settings.const_dict,
     H2O2_dep: bool = default_settings.H2O2_dep,
     O3_dep: bool = default_settings.O3_dep,
@@ -218,7 +216,7 @@ def generate_main_class(
 
     """
     return InChemPyMainClass(filename, INCHEM_additional, particles, constrained_file, output_folder, dt,
-                             volume, surface_area, adults, children, const_dict, H2O2_dep, O3_dep,
+                             volume, surface_area, const_dict, H2O2_dep, O3_dep,
                              custom, timed_emissions, timed_inputs, custom_filename)
 
 
@@ -233,6 +231,7 @@ def run_main_class(
     spline: Union[str, float] = default_settings.spline,
     temperatures: List[List[float]] = default_settings.temperatures,
     rel_humidity: float = default_settings.rel_humidity,
+    const_dict: Dict[str, float] = default_settings.const_dict,
     M: float = default_settings.M,
     light_type: str = default_settings.light_type,
     glass: str = default_settings.glass,
@@ -245,6 +244,8 @@ def run_main_class(
     initial_conditions_gas: str = default_settings.initial_conditions_gas,
     initials_from_run: bool = default_settings.initials_from_run,
     path: str = None,
+    adults: int = default_settings.adults,
+    children: int = default_settings.children,
     output_folder: str = None,
     reactions_output: bool = default_settings.reactions_output,
     initial_dataframe: Optional[DataFrame] = None
@@ -257,5 +258,5 @@ def run_main_class(
     """
     return main_class.run(t0, seconds_to_integrate, dt, timed_emissions, timed_inputs, spline, temperatures,
                           rel_humidity, M, light_type, glass, diurnal, city, date, lat, ACRate_dict,
-                          light_on_times, initial_conditions_gas, initials_from_run, path,
+                          light_on_times, const_dict, initial_conditions_gas, initials_from_run, path,  adults, children, 
                           output_folder, reactions_output, initial_dataframe)
