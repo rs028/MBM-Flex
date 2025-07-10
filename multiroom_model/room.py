@@ -1,6 +1,8 @@
 from typing import Optional, List, Dict, Union, Any
 
 from .roomcomposition import RoomComposition
+from .time_dep_value import TimeDependentValue
+from .bracketed_value import TimeBracketedValue
 
 
 class Room:
@@ -13,6 +15,13 @@ class Room:
     surf_area_in_m2: float
     light_type: str
     glass_type: str
+    temp_in_kelvin: TimeDependentValue = None
+    rh_in_percent: TimeDependentValue = None
+    airchange_in_per_second: TimeDependentValue = None
+    light_switch: TimeDependentValue = None
+    emissions: Dict[str, TimeBracketedValue] = None
+    n_adults: TimeDependentValue = None
+    n_children: TimeDependentValue = None
 
     composition: RoomComposition
 
@@ -29,4 +38,3 @@ class Room:
 
     def surface_area_dictionary(self):
         return self.composition.surface_area_dictionary(self.surf_area_in_m2)
-
