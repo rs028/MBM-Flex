@@ -255,6 +255,8 @@ def run_main_class(
         @brief runs anInChemPyMainClass with the default settings as defined by the InChemPyInstance
         There is no default path or output folder, so no file writing will happen by default
 
+        returns [output_data, integration_times]
+
     """
     return main_class.run(t0, seconds_to_integrate, dt, timed_emissions, timed_inputs, spline, temperatures,
                           rel_humidity, M, light_type, glass, diurnal, city, date, lat, ACRate_dict,

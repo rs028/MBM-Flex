@@ -1,17 +1,15 @@
 import unittest
-import json
-import numpy as np
 from multiroom_model.global_settings import GlobalSettings
 from multiroom_model.room import Room
 from multiroom_model.inchem import generate_main_class, run_main_class
-from multiroom_model.time_dep_value import TimeDependentValue
+from multiroom_model.room_inchempy_evolver import interpret_light_on_times
 from multiroom_model.room_factory import (
     build_rooms,
     populate_room_with_emissions_file,
     populate_room_with_tvar_file,
-    populate_room_with_expos_file,
-    interpret_light_on_times
+    populate_room_with_expos_file
 )
+
 
 
 class TestAssembleAllRoomsFromCSV(unittest.TestCase):

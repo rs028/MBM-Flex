@@ -113,23 +113,3 @@ def populate_room_with_expos_file(room: Room, csv_file: str):
     times = expos_params["seconds_from_midnight"]
     room.n_adults = TimeDependentValue(list(zip(times, expos_params["n_adults"])))
     room.n_children = TimeDependentValue(list(zip(times, expos_params["n_children"])))
-
-def interpret_light_on_times(room_mrlswitch: List[Tuple[float,float]], end_of_total_integration: float)->List[List[int]]:
-
-    light_on_times =[]
-    
-    for i in range(len(room_mrlswitch.values())-1):
-        if(room_mrlswitch.values()[i]==1):
-            light_on_times.append([room_mrlswitch.times()[i], room_mrlswitch.times()[i+1]])
-    if(room_mrlswitch.values()[-1]==1):
-        light_on_times.append([room_mrlswitch.times()[-1], room_mrlswitch.values()[0]+3600.0])
-                              
-    return light_on_times
-
-    #on_times = [room_mrlswitch.times()[i+1] for i in range(len(room_mrlswitch.values())-1) 
-    #            if (room_mrlswitch.values()[i+1]==1) 
-    #            and (room_mrlswitch.values()[i]==0)]
-    #
-    #off_times = [room_mrlswitch.times()[i+1] for i in range(len(room_mrlswitch.values())-1) 
-    #            if (room_mrlswitch.values()[i+1]==0) 
-    #            and (room_mrlswitch.values()[i]==1)]
