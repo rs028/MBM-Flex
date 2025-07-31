@@ -5,31 +5,23 @@ from .inchem import generate_main_class, run_main_class
 from .time_dep_value import TimeDependentValue
 
 
-def interpret_light_on_times(room_mrlswitch: List[Tuple[float,float]], end_of_total_integration: float)->List[List[int]]:
+def interpret_light_on_times(room_mrlswitch: List[Tuple[float, float]], end_of_total_integration: float) -> List[List[int]]:
 
-    light_on_times =[]
-    
+    light_on_times = []
+
     for i in range(len(room_mrlswitch.values())-1):
-        if(room_mrlswitch.values()[i]==1):
+        if (room_mrlswitch.values()[i] == 1):
             light_on_times.append([room_mrlswitch.times()[i], room_mrlswitch.times()[i+1]])
-    if(room_mrlswitch.values()[-1]==1):
+    if (room_mrlswitch.values()[-1] == 1):
         light_on_times.append([room_mrlswitch.times()[-1], room_mrlswitch.values()[0]+3600.0])
-                              
+
     return light_on_times
-
-    #on_times = [room_mrlswitch.times()[i+1] for i in range(len(room_mrlswitch.values())-1) 
-    #            if (room_mrlswitch.values()[i+1]==1) 
-    #            and (room_mrlswitch.values()[i]==0)]
-    #
-    #off_times = [room_mrlswitch.times()[i+1] for i in range(len(room_mrlswitch.values())-1) 
-    #            if (room_mrlswitch.values()[i+1]==0) 
-    #            and (room_mrlswitch.values()[i]==1)]
-
 
 
 class RoomInchemPyEvolver:
     """
-        @brief A class which can evolve the state of species in a room using inchempy
+        @brief A class which can evolve the state of species in a room using Inchem py
+        Initialization generates the jacobeans, then running updates species.
 
     """
 
@@ -41,7 +33,7 @@ class RoomInchemPyEvolver:
     def __init__(self, room: RoomChemistry, global_settings: GlobalSettings, const_dict: dict = None):
         self.room = room
         self.global_settings = global_settings
-        self.const_dict= const_dict or {
+        self.const_dict = const_dict or {
             'O2': 0.2095,
             'N2': 0.7809,
             'H2': 550e-9,
@@ -50,7 +42,7 @@ class RoomInchemPyEvolver:
 
         timed_emissions = hasattr(room, "emissions")
         if timed_emissions:
-            timed_inputs = {k: v.values() for k, v in room.emissions.items()} 
+            timed_inputs = {k: v.values() for k, v in room.emissions.items()}
         else:
             timed_inputs = None
 
@@ -72,10 +64,9 @@ class RoomInchemPyEvolver:
             custom_filename=self.global_settings.custom_filename
         )
 
-
-    def run(self, t0, seconds_to_integrate, initial_dataframe = None, initial_text_file = None, const_dict: dict = None):
+    def run(self, t0, seconds_to_integrate, initial_dataframe=None, initial_text_file=None, const_dict: dict = None):
         '''
-        
+
         returns [output_data, integration_times]
         '''
         initials_from_run = initial_dataframe is not None
@@ -89,9 +80,7 @@ class RoomInchemPyEvolver:
         spline = 'Linear'
         ambient_press = 1013.0
         M = ((100*ambient_press)/(8.3144626*room_temperature))*(6.0221408e23/1e6)  # number density (molecule cm^-3)
-        # print('mrt=',mrt,'M=',M)
 
-        # Place any parameter that needs to remain constant in the below dictionary.
         cd = const_dict or {
             'O2': 0.2095*M,
             'N2': 0.7809*M,
@@ -104,7 +93,7 @@ class RoomInchemPyEvolver:
 
         timed_emissions = hasattr(self.room, "emissions")
         if timed_emissions:
-            timed_inputs = {k: v.values() for k, v in self.room.emissions.items()} 
+            timed_inputs = {k: v.values() for k, v in self.room.emissions.items()}
         else:
             timed_inputs = None
 
