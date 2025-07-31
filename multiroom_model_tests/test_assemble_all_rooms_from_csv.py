@@ -1,8 +1,8 @@
 import unittest
 import json
 import numpy as np
-from multiroom_model.roomcomposition import RoomComposition
-from multiroom_model.room import Room
+from multiroom_model.surface_composition import SurfaceComposition
+from multiroom_model.room_chemistry import RoomChemistry
 from multiroom_model.time_dep_value import TimeDependentValue
 from multiroom_model.room_factory import (
     build_rooms,

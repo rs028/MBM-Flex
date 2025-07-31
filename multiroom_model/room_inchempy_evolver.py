@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from .global_settings import GlobalSettings
-from .room import Room
+from .room_chemistry import RoomChemistry
 from .inchem import generate_main_class, run_main_class
 from .time_dep_value import TimeDependentValue
 
@@ -34,11 +34,11 @@ class RoomInchemPyEvolver:
     """
 
     inchem = None
-    room: Room = None
+    room: RoomChemistry = None
     global_settings: GlobalSettings = None
     const_dict: dict = None
 
-    def __init__(self, room: Room, global_settings: GlobalSettings, const_dict: dict = None):
+    def __init__(self, room: RoomChemistry, global_settings: GlobalSettings, const_dict: dict = None):
         self.room = room
         self.global_settings = global_settings
         self.const_dict= const_dict or {

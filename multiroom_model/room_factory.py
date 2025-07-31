@@ -1,5 +1,5 @@
-from .roomcomposition import RoomComposition
-from .room import Room
+from .surface_composition import SurfaceComposition
+from .room_chemistry import RoomChemistry
 from .time_dep_value import TimeDependentValue
 from.bracketed_value import TimeBracketedValue
 from pandas import read_csv
@@ -37,7 +37,7 @@ def build_rooms(csv_file: str):
     result = {}
 
     for i in range(nroom):
-        rc = RoomComposition(
+        rc = SurfaceComposition(
             soft=mrsoft[i],
             paint=mrpaint[i],
             wood=mrwood[i],
@@ -49,7 +49,7 @@ def build_rooms(csv_file: str):
             glass=mrglass[i],
             other=mrother[i])
 
-        r = Room(
+        r = RoomChemistry(
             composition=rc,
             volume_in_m3=mrvol[i],
             surf_area_in_m2=mrsurfa[i],
@@ -61,7 +61,7 @@ def build_rooms(csv_file: str):
     return result
 
 
-def populate_room_with_emissions_file(room: Room, csv_file: str):
+def populate_room_with_emissions_file(room: RoomChemistry, csv_file: str):
     """
     Use a csv emissions file to populate an existing room with emissions
     """
@@ -91,7 +91,7 @@ def populate_room_with_emissions_file(room: Room, csv_file: str):
 
 
 
-def populate_room_with_tvar_file(room: Room, csv_file: str):
+def populate_room_with_tvar_file(room: RoomChemistry, csv_file: str):
     """
     Use a csv variables file to populate an existing room with additional properties
     """
@@ -104,7 +104,7 @@ def populate_room_with_tvar_file(room: Room, csv_file: str):
     room.light_switch = TimeDependentValue(list(zip(times, expos_params["light_switch"])))
 
 
-def populate_room_with_expos_file(room: Room, csv_file: str):
+def populate_room_with_expos_file(room: RoomChemistry, csv_file: str):
     """
     Use a csv exposure file to populate an existing room with numbers of children an adults
     """

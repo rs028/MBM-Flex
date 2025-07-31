@@ -1,7 +1,7 @@
 from typing import Optional
 
 
-class RoomComposition:
+class SurfaceComposition:
     """
         @brief A class recording the composition of surface materials (in percentages) in a single room,
 

@@ -1,6 +1,6 @@
 import unittest
-from multiroom_model.roomcomposition import RoomComposition
-from multiroom_model.room import Room
+from multiroom_model.surface_composition import SurfaceComposition
+from multiroom_model.room_chemistry import RoomChemistry
 from multiroom_model.time_dep_value import TimeDependentValue
 from multiroom_model.bracketed_value import TimeBracketedValue
 from multiroom_model.room_factory import (
@@ -23,7 +23,7 @@ class TestRoomPopulationIntegration(unittest.TestCase):
     def test_room_basic_fields(self):
         for room_id, room in self.rooms.items():
             with self.subTest(room_id=room_id):
-                self.assertIsInstance(room, Room)
+                self.assertIsInstance(room, RoomChemistry)
                 self.assertIsInstance(room.volume_in_m3, (int, float))
                 self.assertGreater(room.volume_in_m3, 0)
                 self.assertIsInstance(room.surf_area_in_m2, (int, float))
@@ -34,7 +34,7 @@ class TestRoomPopulationIntegration(unittest.TestCase):
         for room_id, room in self.rooms.items():
             with self.subTest(room_id=room_id):
                 comp = room.composition
-                self.assertIsInstance(comp, RoomComposition)
+                self.assertIsInstance(comp, SurfaceComposition)
                 for mat_name, value in vars(comp).items():
                     self.assertIsInstance(value, (int, float), f"{mat_name} should be a number")
                     self.assertGreaterEqual(value, 0, f"{mat_name} should be >= 0")

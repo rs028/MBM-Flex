@@ -1,11 +1,11 @@
 from typing import Optional, List, Dict, Union, Any
 
-from .roomcomposition import RoomComposition
+from .surface_composition import SurfaceComposition
 from .time_dep_value import TimeDependentValue
 from .bracketed_value import TimeBracketedValue
 
 
-class Room:
+class RoomChemistry:
     """
         @brief A class recording all the options applicable to a single room
 
@@ -23,13 +23,13 @@ class Room:
     n_adults: TimeDependentValue = None
     n_children: TimeDependentValue = None
 
-    composition: RoomComposition
+    composition: SurfaceComposition
 
     def __init__(self, volume_in_m3: float,
                  surf_area_in_m2: float,
                  light_type: str,
                  glass_type: str,
-                 composition: RoomComposition):
+                 composition: SurfaceComposition):
         self.volume_in_m3 = volume_in_m3
         self.surf_area_in_m2 = surf_area_in_m2
         self.light_type = light_type

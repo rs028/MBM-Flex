@@ -1,6 +1,6 @@
 import unittest
 from multiroom_model.global_settings import GlobalSettings
-from multiroom_model.room import Room
+from multiroom_model.room_chemistry import RoomChemistry
 from multiroom_model.inchem import generate_main_class, run_main_class
 from multiroom_model.room_inchempy_evolver import interpret_light_on_times
 from multiroom_model.room_factory import (
@@ -41,7 +41,7 @@ class TestAssembleAllRoomsFromCSV(unittest.TestCase):
         )
 
     def test_room_inchempy(self):
-        room: Room = self.rooms[1]
+        room: RoomChemistry = self.rooms[1]
 
         timed_emissions = hasattr(room, "emissions")
         if timed_emissions:

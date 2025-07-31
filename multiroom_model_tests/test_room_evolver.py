@@ -1,6 +1,6 @@
 import unittest
 from multiroom_model.global_settings import GlobalSettings
-from multiroom_model.room import Room
+from multiroom_model.room_chemistry import RoomChemistry
 from multiroom_model.room_inchempy_evolver import  RoomInchemPyEvolver
 from multiroom_model.room_factory import (
     build_rooms,
@@ -38,7 +38,7 @@ class TestRoomEvolverClass(unittest.TestCase):
         )
 
     def test_room__evolver_class(self):
-        room: Room = self.rooms[2]
+        room: RoomChemistry = self.rooms[2]
 
         evolver  = RoomInchemPyEvolver(room, self.global_settings)
 
@@ -50,7 +50,7 @@ class TestRoomEvolverClass(unittest.TestCase):
 
         
     def test_room__evolver_class_run_twice(self):
-        room: Room = self.rooms[2]
+        room: RoomChemistry = self.rooms[2]
 
         evolver  = RoomInchemPyEvolver(room, self.global_settings)
 
