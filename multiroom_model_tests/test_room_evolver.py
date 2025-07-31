@@ -1,13 +1,14 @@
 import unittest
 from multiroom_model.global_settings import GlobalSettings
 from multiroom_model.room_chemistry import RoomChemistry
-from multiroom_model.room_inchempy_evolver import  RoomInchemPyEvolver
+from multiroom_model.room_inchempy_evolver import RoomInchemPyEvolver
 from multiroom_model.room_factory import (
     build_rooms,
     populate_room_with_emissions_file,
     populate_room_with_tvar_file,
     populate_room_with_expos_file
 )
+
 
 class TestRoomEvolverClass(unittest.TestCase):
     @classmethod
@@ -40,31 +41,27 @@ class TestRoomEvolverClass(unittest.TestCase):
     def test_room__evolver_class(self):
         room: RoomChemistry = self.rooms[2]
 
-        evolver  = RoomInchemPyEvolver(room, self.global_settings)
+        evolver = RoomInchemPyEvolver(room, self.global_settings)
 
         output_data, integration_times = evolver.run(
             t0=0,
-            seconds_to_integrate= 10,
+            seconds_to_integrate=10,
             initial_text_file='initial_concentrations.txt'
         )
 
-        
     def test_room__evolver_class_run_twice(self):
         room: RoomChemistry = self.rooms[2]
 
-        evolver  = RoomInchemPyEvolver(room, self.global_settings)
+        evolver = RoomInchemPyEvolver(room, self.global_settings)
 
         output_data, integration_times = evolver.run(
             t0=0,
-            seconds_to_integrate= 10,
+            seconds_to_integrate=10,
             initial_text_file='initial_concentrations.txt'
         )
-        
+
         output_data_part2, integration_times_part2 = evolver.run(
             t0=10,
-            seconds_to_integrate= 10,
+            seconds_to_integrate=10,
             initial_dataframe=output_data
         )
-
-
-
