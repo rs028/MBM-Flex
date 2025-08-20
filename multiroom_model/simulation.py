@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 from .room_chemistry import RoomChemistry
 from .window_chemistry import WindowChemistry
 from .room_inchempy_evolver import RoomInchemPyEvolver
@@ -22,24 +22,24 @@ class Simulation:
         self._rooms = rooms
         self._windows = windows
 
-        self._room_evolvers = [RoomInchemPyEvolver(r, self._global_settings) for r in self._rooms]
-        self._window_evolvers = [WindowInchemPyEvolver() for w in self._windows]
+        self._room_evolvers: List[RoomInchemPyEvolver] = [RoomInchemPyEvolver(r, self._global_settings) for r in self._rooms]
+        self._window_evolvers: List[WindowInchemPyEvolver] = [WindowInchemPyEvolver() for w in self._windows]
 
     def run(self, init_conditions: dict, t0: float, t_total: float, t_interval: float):
 
         # First step
 
-        room_results = dict([
+        room_results: Dict[RoomChemistry, pd.DataFrame] = dict([
             (r.room, r.run(t0=t0, seconds_to_integrate=t_interval, initial_text_file=init_conditions[r.room])[0])
             for r in self._room_evolvers])
 
-        solved_time = min(r.index[-1] for i, r in room_results.items())
+        solved_time: float = min(r.index[-1] for i, r in room_results.items())
 
-        cumulative_room_results = dict([(r, result.copy()) for r, result in room_results.items()])
+        cumulative_room_results: Dict[RoomChemistry, pd.DataFrame] = dict([(r, result.copy()) for r, result in room_results.items()])
 
         while (solved_time+t_interval <= t_total):
 
-            window_results = [self.calculate_window_results(w, room_results) for w in self._window_evolvers]
+            window_results: Dict[WindowChemistry, Any] = [self.calculate_window_results(w, room_results) for w in self._window_evolvers]
 
             room_results = self.apply_window_results(room_results, window_results)
 
@@ -52,7 +52,7 @@ class Simulation:
 
             solved_time = min(r.index[-1] for i, r in room_results.items())
 
-         # Final step
+        # Final step
 
         if solved_time < t_total:
             window_results = [self.calculate_window_results(w, room_results) for w in self._window_evolvers]
