@@ -71,3 +71,26 @@ class TestTwoRoomSimulation(unittest.TestCase):
             self.assertEqual(result[r].index[-2], 24.0)
             self.assertEqual(result[r].index[-1], 25.0)
             self.assertEqual(len(result[r].index), int(25/1)+1+int(25/3))
+
+
+    def test_9_room_simulation(self):
+        rooms = self.rooms.values()
+
+        self.global_settings.dt = 100
+
+        simulation = Simulation(
+            global_settings=self.global_settings,
+            rooms=rooms,
+            windows=[])
+
+        initial_conditions = dict([(r, 'initial_concentrations.txt') for r in rooms])
+
+        result = simulation.run(
+            t0=0.0,
+            t_total=82800,
+            t_interval=1500,
+            init_conditions=initial_conditions
+        )
+
+        for i, r in enumerate(rooms):
+            result[r].to_pickle(f"C:/temp/room_data/d_room_results_Room{i+1}.pkl")
