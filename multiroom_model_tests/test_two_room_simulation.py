@@ -1,3 +1,4 @@
+import pickle
 import unittest
 from multiroom_model.global_settings import GlobalSettings
 from multiroom_model.simulation import Simulation
@@ -87,10 +88,12 @@ class TestTwoRoomSimulation(unittest.TestCase):
 
         result = simulation.run(
             t0=0.0,
-            t_total=82800,
+            t_total=8280,
             t_interval=1500,
             init_conditions=initial_conditions
         )
 
-        for i, r in enumerate(rooms):
-            result[r].to_pickle(f"C:/temp/room_data/d_room_results_Room{i+1}.pkl")
+        d = dict([(f"Room{i+1}", result[r]) for i, r in enumerate(rooms)])
+
+        pickle.dump(d, open(f"C:/temp/room_data/room_results.pkl","wb"))
+        
