@@ -76,7 +76,7 @@ def populate_room_with_emissions_file(room: RoomChemistry, csv_file: str):
         if match:
             return float(match.group())
         else:
-            raise Exception("No time detected in the collumn")
+            raise Exception("No time detected in the column")
 
     times = [extract_time(t) for t in time_cols]
     room.emissions = {}
