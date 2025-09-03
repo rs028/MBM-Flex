@@ -95,5 +95,5 @@ class TestTwoRoomSimulation(unittest.TestCase):
 
         d = dict([(f"Room {i+1}", result[r]) for i, r in enumerate(rooms)])
 
-        pickle.dump(d, open(f"C:/temp/room_data/room_results.pkl","wb"))
+        #pickle.dump(d, open(f"C:/temp/room_data/room_results.pkl","wb"))
 

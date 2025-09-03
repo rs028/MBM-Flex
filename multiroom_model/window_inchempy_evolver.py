@@ -1,8 +1,6 @@
 from typing import List, Tuple
 
-class WindowInchemPyEvolver:
+class WindowEvolver:
     """
-        @brief A class which can evolve the state of species in a room using Inchem py
-        Initialization generates the jacobeans, then running updates species.
-
+        @brief A class which can model the effects of a window on the chemical species
     """
