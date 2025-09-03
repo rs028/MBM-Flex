@@ -93,6 +93,11 @@ class TestTransportPaths(unittest.TestCase):
         ]
 
         result = paths_between_windows(self.rooms, windows)
+        #   layout           ^ ^   
+        #                    # #
+        #                     #
+        #                     # 
+        #                     v 
 
         #there should be 2 routes from front to back, each going through 4 windows
         self.assertEqual(len(result), 2)
@@ -121,6 +126,13 @@ class TestTransportPaths(unittest.TestCase):
         ]
 
         result = paths_between_windows(self.rooms, windows)
+
+        #   layout            ^ ^
+        #                     # #
+        #                     ###
+        #                     # #
+        #                     v v
+
 
         #there should be 4 routes from front to back, 2 going through 4 windows, 2 going through 6 windows
         self.assertEqual(len(result), 4)
