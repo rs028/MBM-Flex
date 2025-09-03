@@ -1,7 +1,13 @@
 from typing import Optional, Any
 from enum import Enum
 
+
 class Side(Enum):
+    """
+        @brief A side of a room on which a window is situated.
+        If the window has only one room, then this is the side of the building
+    """
+
     Front = 1
     Back = 2
     Left = 3
@@ -9,8 +15,14 @@ class Side(Enum):
     Upward = 5
     Downward = 6
 
+
 class Window:
-    def __init__(self, room1: Any, room2: Optional[Any], side_of_room_1:Side):
+    """
+        @brief A window either between 2 rooms, or from the room to the outside
+        Includes the side of the room where the window is situated
+    """
+
+    def __init__(self, room1: Any, room2: Optional[Any], side_of_room_1: Side):
         self.room1 = room1
         self.room2 = room2
         self.side_of_room_1 = side_of_room_1
