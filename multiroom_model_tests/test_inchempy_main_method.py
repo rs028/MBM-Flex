@@ -12,6 +12,7 @@ class TestInChemPyMainMethod(unittest.TestCase):
 
         inchem_py_instance.run()
 
+    @unittest.skip("Requires file IO, see TestInChemPyMainClass instead")
     def test_inchempy_runs_with_chem_mech_set(self):
         inchem_py_instance: InChemPyInstance = InChemPyInstance(
             filename="chem_mech/mcm_v331.fac",
@@ -22,6 +23,7 @@ class TestInChemPyMainMethod(unittest.TestCase):
 
         inchem_py_instance.run()
 
+    @unittest.skip("Requires file IO, see TestInChemPyMainClass instead")
     def test_inchempy_runs_with_escs_v1_set(self):
         inchem_py_instance: InChemPyInstance = InChemPyInstance(
             filename="chem_mech/escs_v1.fac",
@@ -32,6 +34,7 @@ class TestInChemPyMainMethod(unittest.TestCase):
 
         inchem_py_instance.run()
 
+    @unittest.skip("Requires file IO, see TestInChemPyMainClass instead")
     def test_inchempy_runs_with_rcs_2023_set(self):
         inchem_py_instance: InChemPyInstance = InChemPyInstance(
             filename="chem_mech/rcs_2023.fac",
@@ -42,6 +45,7 @@ class TestInChemPyMainMethod(unittest.TestCase):
 
         inchem_py_instance.run()
 
+    @unittest.skip("Requires file IO, see TestInChemPyMainClass instead")
     def test_inchempy_runs_with_mcm_subset_set(self):
         inchem_py_instance: InChemPyInstance = InChemPyInstance(
             filename="chem_mech/mcm_subset.fac",
@@ -52,7 +56,7 @@ class TestInChemPyMainMethod(unittest.TestCase):
 
         inchem_py_instance.run()
 
-    
+    @unittest.skip("Requires file IO, see TestInChemPyMainClass instead")
     def test_inchempy_runs_with_chem_mech_set_and_additions(self):
         inchem_py_instance: InChemPyInstance = InChemPyInstance(
             filename="chem_mech/mcm_v331.fac",
@@ -63,6 +67,7 @@ class TestInChemPyMainMethod(unittest.TestCase):
 
         inchem_py_instance.run()
 
+    @unittest.skip("Requires file IO, see TestInChemPyMainClass instead")
     def test_inchempy_runs_with_escs_v1_set_and_additions(self):
         inchem_py_instance: InChemPyInstance = InChemPyInstance(
             filename="chem_mech/escs_v1.fac",
@@ -73,6 +78,7 @@ class TestInChemPyMainMethod(unittest.TestCase):
 
         inchem_py_instance.run()
 
+    @unittest.skip("Requires file IO, see TestInChemPyMainClass instead")
     def test_inchempy_runs_with_rcs_2023_set_and_additions(self):
         inchem_py_instance: InChemPyInstance = InChemPyInstance(
             filename="chem_mech/rcs_2023.fac",
@@ -83,6 +89,7 @@ class TestInChemPyMainMethod(unittest.TestCase):
 
         inchem_py_instance.run()
 
+    @unittest.skip("Requires file IO, see TestInChemPyMainClass instead")
     def test_inchempy_runs_with_mcm_subset_set_and_additions(self):
         inchem_py_instance: InChemPyInstance = InChemPyInstance(
             filename="chem_mech/mcm_subset.fac",
