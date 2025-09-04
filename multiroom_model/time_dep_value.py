@@ -6,10 +6,11 @@ class TimeDependentValue:
         @brief A class recording a variable which varies in time
         Stored in the form of a list of tuples,
         each  tuple has a time and a value 
+        it can be continuous which means that linear interpolation will be performed between defined times
 
     """
 
-    def __init__(self, values: List[Tuple[float, float]]):
+    def __init__(self, values: List[Tuple[float, float]], continuous):
 
         if len(values) == 0:
             raise Exception("no times provided")
@@ -19,6 +20,7 @@ class TimeDependentValue:
                 raise Exception("times were not in order")
 
         self._values: List[Tuple[float, float]] = values
+        self._continuous = continuous
 
     def times(self) -> List[float]:
         return [v[0] for v in self._values]
@@ -47,6 +49,9 @@ class TimeDependentValue:
             t1, v1 = self._values[i + 1]
 
             if t0 <= t <= t1:
-                return v0 + (v1 - v0) * (t - t0) / (t1 - t0)
+                if(self._continuous):
+                    return v0 + (v1 - v0) * (t - t0) / (t1 - t0)
+                else:
+                    return v0
 
         raise Exception("Invalid time")
