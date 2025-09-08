@@ -51,9 +51,11 @@ class SurfaceComposition:
 
         total = sum(self.surface_area_dictionary(100.0).values())
 
+        # Check that the sum of % areas is near 100
         if total > 100+1.0e-12 or total < 100-1.0e-12:
             raise ValueError("The total did not come to 100% (if you leave \"other\" undefined it will be calculated)")
 
+        # Check that no individual % is above 100 or below 0
         for name, value in self.surface_area_dictionary(100.0).items():
             if value < 0 or value > 100:
                 raise ValueError(f"{name} must be a percentage between 0 and 100 (got {value})")

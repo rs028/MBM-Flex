@@ -11,9 +11,11 @@ class TimeBracketedValue:
 
     def __init__(self, values: List[Tuple[float, float, float]]):
 
+        #Check that some times were provided
         if len(values) == 0:
             raise Exception("no times provided")
 
+        #Check that the end time comes after the start time
         for i in range(len(values)-1):
             if (values[i][0] >= values[i][1]):
                 raise Exception("times were not in order")
@@ -24,13 +26,15 @@ class TimeBracketedValue:
         """
         if the time is within a bracket return that value, otherwise return 0
         """
-               # Linear interpolation if between 2 times
+
+        #Loop through the brackets
         for i in range(len(self._values) - 1):
             t0, t1, v = self._values[i]
-
+            #if t is in the bracket return the value
             if t0 <= t <= t1:
                 return v
 
+        #return 0 if there isn't a bracket around t
         return 0
 
     def values(self):

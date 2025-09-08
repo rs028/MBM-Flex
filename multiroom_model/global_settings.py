@@ -1,4 +1,7 @@
 class GlobalSettings:
+    """
+         @brief Stores data needed for inchempy which dies not differ between the rooms
+    """
     def __init__(
         self,
         filename: str = 'chem_mech/mcm_subset.fac',
