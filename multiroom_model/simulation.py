@@ -102,8 +102,10 @@ class Simulation:
 
     @staticmethod
     def build_window_evolver_starmap(window, global_settings):
+        #TODO: Implement a window evolver and run it
         return WindowEvolver()
 
     @staticmethod
     def run_window_evolver_starmap(evolver, t0, room_results):
+        #TODO: Implement a window evolver and run it
         return 0
