@@ -10,7 +10,7 @@ from multiprocess import Pool
 
 class Simulation:
     """
-        @brief A class which can evolve the state of species a set of rooms and windows
+        @brief A class which can evolve the state of species in a set of rooms and windows
 
     """
 
