@@ -3,7 +3,7 @@ from modules.inchem_main_class import InChemPyMainClass
 from multiroom_model.inchem import generate_main_class, run_main_class
 
 
-class TestInChemPyMainCass(unittest.TestCase):
+class TestInChemPyMainClass(unittest.TestCase):
 
     def test_inchempy_runs(self):
         inchem_main_class: InChemPyMainClass = generate_main_class(

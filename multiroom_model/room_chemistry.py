@@ -7,7 +7,7 @@ from .bracketed_value import TimeBracketedValue
 
 class RoomChemistry:
     """
-        @brief A class recording all the options applicable to a single room
+        @brief A class recording all the options applicable to the chemistry of a single room
 
     """
 
