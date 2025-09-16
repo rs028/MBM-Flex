@@ -31,8 +31,12 @@ class RoomInchemPyEvolver:
     const_dict: dict = None
 
     def __init__(self, room: RoomChemistry, global_settings: GlobalSettings, const_dict: dict = None):
+
+        # Store the room and settings
         self.room = room
         self.global_settings = global_settings
+
+        # If the const dict is not provided, use this default one
         self.const_dict = const_dict or {
             'O2': 0.2095,
             'N2': 0.7809,
@@ -40,12 +44,14 @@ class RoomInchemPyEvolver:
             'saero': 1.3e-2  # aerosol surface area concentration
         }
 
+        # Change the rooms emisions into the format of dictionary which inchempy understands 
         timed_emissions = hasattr(room, "emissions")
         if timed_emissions:
             timed_inputs = {k: v.values() for k, v in room.emissions.items()}
         else:
             timed_inputs = None
 
+        #Generate an inchempy instance, (including calculating the jacobians for later use)
         self.inchem = generate_main_class(
             filename=self.global_settings.filename,
             INCHEM_additional=self.global_settings.INCHEM_additional,
@@ -66,37 +72,53 @@ class RoomInchemPyEvolver:
 
     def run(self, t0, seconds_to_integrate, initial_dataframe=None, initial_text_file=None, const_dict: dict = None):
         '''
-
+        @brief: Runs the inchempy simulation for one precise time interval, initial conditions, and a const_dict
         returns [output_data, integration_times]
         '''
+
+        # Interpret the 2 options for ways to define initial conditions
         initials_from_run = initial_dataframe is not None
         initial_conditions_gas = initial_text_file
 
+        # use the start time to look up the numbers of children and adults
         adults = self.room.n_adults.value_at_time(t0)
         children = self.room.n_children.value_at_time(t0)
 
+        # use the start time to look up the values for humidity and temperature
         rel_humidity = self.room.rh_in_percent.value_at_time(t0)
         room_temperature = self.room.temp_in_kelvin.value_at_time(t0)
+
+        # We always use linear interpolation on the temperatures
         spline = 'Linear'
+
+        #Hard coded pressure
         ambient_press = 1013.0
+
+        #Using the pressure and temperature, we calculate a number-density M
         M = ((100*ambient_press)/(8.3144626*room_temperature))*(6.0221408e23/1e6)  # number density (molecule cm^-3)
 
+        # Now we know M, we can update the const dictionary for the standard gasses
         cd = const_dict or {
             'O2': 0.2095*M,
             'N2': 0.7809*M,
             'H2': 550e-9*M,
             'saero': 1.3e-2  # aerosol surface area concentration
         }
+
+
+        # Change the rooms time dependent properties to lists and dictionaries which inchempy understands 
         light_on_times = interpret_light_on_times(self.room.light_switch, t0+seconds_to_integrate)
         temperatures = list(zip(self.room.temp_in_kelvin.times(), self.room.temp_in_kelvin.values()))
         ACRate_dict = dict(zip(self.room.airchange_in_per_second.times(), self.room.airchange_in_per_second.values()))
 
+        # Change the rooms emisions into the format of dictionary which inchempy understands 
         timed_emissions = hasattr(self.room, "emissions")
         if timed_emissions:
             timed_inputs = {k: v.values() for k, v in self.room.emissions.items()}
         else:
             timed_inputs = None
 
+        # Run the inchempy instance with these properties, times and initial conditions
         result = run_main_class(self.inchem,
                                 t0=t0,
                                 seconds_to_integrate=seconds_to_integrate,

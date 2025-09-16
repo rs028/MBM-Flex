@@ -98,10 +98,10 @@ def populate_room_with_tvar_file(room: RoomChemistry, csv_file: str):
     expos_params = read_csv(csv_file)
 
     times = expos_params["seconds_from_midnight"]
-    room.temp_in_kelvin = TimeDependentValue(list(zip(times, expos_params["temp_in_kelvin"])))
-    room.rh_in_percent = TimeDependentValue(list(zip(times, expos_params["rh_in_percent"])))
-    room.airchange_in_per_second = TimeDependentValue(list(zip(times, expos_params["airchange_in_per_second"])))
-    room.light_switch = TimeDependentValue(list(zip(times, expos_params["light_switch"])))
+    room.temp_in_kelvin = TimeDependentValue(list(zip(times, expos_params["temp_in_kelvin"])), continuous=True)
+    room.rh_in_percent = TimeDependentValue(list(zip(times, expos_params["rh_in_percent"])), continuous=True)
+    room.airchange_in_per_second = TimeDependentValue(list(zip(times, expos_params["airchange_in_per_second"])), continuous=True)
+    room.light_switch = TimeDependentValue(list(zip(times, expos_params["light_switch"])), continuous=False)
 
 
 def populate_room_with_expos_file(room: RoomChemistry, csv_file: str):
@@ -111,5 +111,5 @@ def populate_room_with_expos_file(room: RoomChemistry, csv_file: str):
     expos_params = read_csv(csv_file)
 
     times = expos_params["seconds_from_midnight"]
-    room.n_adults = TimeDependentValue(list(zip(times, expos_params["n_adults"])))
-    room.n_children = TimeDependentValue(list(zip(times, expos_params["n_children"])))
+    room.n_adults = TimeDependentValue(list(zip(times, expos_params["n_adults"])), continuous=False)
+    room.n_children = TimeDependentValue(list(zip(times, expos_params["n_children"])), continuous=False)
