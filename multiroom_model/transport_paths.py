@@ -50,6 +50,9 @@ def paths_through_building(rooms: List[Any], windows: List[Window]) -> List[Tran
     def all_paths_between(start_node, end_node) -> List[TransportPath]:
         result: List[TransportPath] = []
 
+        excluded_nodes = [r for r in [graph[Side.Front], graph[Side.Left], graph[Side.Back],
+                                      graph[Side.Right]] if r is not start_node and r is not end_node]
+
         # recursive utility function
         def find_all_paths(current_node: Node, final_destination: Node, visited: List[Node], path):
             if (current_node == final_destination):
@@ -63,7 +66,7 @@ def paths_through_building(rooms: List[Any], windows: List[Window]) -> List[Tran
                     new_path.append(edge.window)
                     find_all_paths(edge.destination, final_destination, new_visited, new_path)
 
-        find_all_paths(start_node, end_node, [], [])
+        find_all_paths(start_node, end_node, excluded_nodes, [])
         return result
 
     # Use this method 6 times to accumulate all routes between the 4 outside nodes
