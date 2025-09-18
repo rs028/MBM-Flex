@@ -7,4 +7,4 @@ __pycache__/
 
 # an appropriate version of inchempy needs to be coppied over from another source before use
 # this needs to be done manually as we don't want to use a submodule
-inchempy
+inchempy/
