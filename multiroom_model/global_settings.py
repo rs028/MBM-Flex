@@ -22,20 +22,20 @@ class GlobalSettings:
         reactions_output: bool = False
     ):
         """
-        @param filename Input FACSIMILE format filename.
-        @param particles Boolean flag to include particle modeling.
-        @param INCHEM_additional Include additional INCHEM reactions not in the MCM download.
-        @param custom Include custom reactions.
-        @param custom_filename Filename for custom reaction input.
-        @param diurnal Enable diurnal variation of outdoor concentrations.
-        @param city City for outdoor concentration profiles.
-        @param date Simulation date in format "DD-MM-YYYY".
-        @param lat Latitude of the simulation location.
-        @param H2O2_dep Enable surface deposition for H2O2.
-        @param O3_dep Enable surface deposition for O3.
-        @param constrained_file CSV file to constrain species or rates over time.
-        @param dt Time step for integration (seconds).
-        @param reactions_output Save detailed reaction rates and constants.
+        @param filename: Input FACSIMILE format filename.
+        @param particles: Boolean flag to include particle modeling.
+        @param INCHEM_additional: Include additional INCHEM reactions not in the MCM download.
+        @param custom: Include custom reactions.
+        @param custom_filename: Filename for custom reaction input.
+        @param diurnal: Enable diurnal variation of outdoor concentrations.
+        @param city: City for outdoor concentration profiles.
+        @param date: Simulation date in format "DD-MM-YYYY".
+        @param lat: Latitude of the simulation location.
+        @param H2O2_dep: Enable surface deposition for H2O2.
+        @param O3_dep: Enable surface deposition for O3.
+        @param constrained_file: CSV file to constrain species or rates over time.
+        @param dt: Time step for integration (seconds).
+        @param reactions_output: Save detailed reaction rates and constants.
     """
         self.filename = filename
         self.INCHEM_additional = INCHEM_additional
