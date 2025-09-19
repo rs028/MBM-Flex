@@ -1,27 +1,38 @@
 from typing import List, Any, Dict, Set
 from dataclasses import dataclass
-from .window import Window, Side
+from .aperture import Aperture, Side
+
+
+@dataclass
+class TransportPathParticipation:
+    """
+        @brief The involvement of an aperture in a transport path
+        If reversed then the 2nds room of the aperture comes first in the transport path
+    """
+    aperture: Aperture
+    reversed: bool = False
 
 
 class TransportPath:
     """
-        @brief A route between 2 terminus (probably outside sides of the house)
-        Defined by the ordered list of windows traversed
+        @brief A route from a start to an end (probably outside sides of the house)
+        Defined by the ordered list of Apertures traversed
     """
 
-    def __init__(self, terminus: Set[Any], route: List[Window]):
-        self.terminus: Set[Any] = terminus
-        self.route: List[Window] = route
+    def __init__(self, start: Any, end: Any, route: List[TransportPathParticipation]):
+        self.start: Any = start
+        self.end: Any = end
+        self.route: List[TransportPathParticipation] = route
 
 
-def paths_through_building(rooms: List[Any], windows: List[Window]) -> List[TransportPath]:
+def paths_through_building(rooms: List[Any], apertures: List[Aperture]) -> List[TransportPath]:
     """
-        @brief Given a list of rooms and a list of windows joining them (either to each other or the outside)
+        @brief Given a list of rooms and a list of apertures joining them (either to each other or the outside)
         Produces a list of the unique transport paths from one outside side of the house to another
         Each path goes through each room only once, preventing cycles
     """
 
-    # build a graph where nodes are either rooms or outsides, and edges are windows
+    # build a graph where nodes are either rooms or outsides, and edges are apertures
     @dataclass
     class Node:
         item: Any
@@ -31,7 +42,7 @@ def paths_through_building(rooms: List[Any], windows: List[Window]) -> List[Tran
     class Edge:
         source: Node
         destination: Node
-        window: Window
+        aperture: TransportPathParticipation
 
     graph: Dict[Any, Node] = {}
     for s in [Side.Back, Side.Front, Side.Left, Side.Right]:
@@ -39,11 +50,11 @@ def paths_through_building(rooms: List[Any], windows: List[Window]) -> List[Tran
     for r in rooms:
         graph[r] = Node(item=r, edges=[])
 
-    for w in windows:
+    for w in apertures:
         node_1: Node = graph[w.room1]
         node_2: Node = graph[w.room2 or w.side_of_room_1]
-        node_1.edges.append(Edge(source=node_1, destination=node_2, window=w))
-        node_2.edges.append(Edge(source=node_2, destination=node_1, window=w))
+        node_1.edges.append(Edge(source=node_1, destination=node_2, aperture=TransportPathParticipation(w, False)))
+        node_2.edges.append(Edge(source=node_2, destination=node_1, aperture=TransportPathParticipation(w, True)))
 
     # method to find all the paths from one start node to an end node
 
@@ -54,16 +65,16 @@ def paths_through_building(rooms: List[Any], windows: List[Window]) -> List[Tran
                                       graph[Side.Right]] if r is not start_node and r is not end_node]
 
         # recursive utility function
-        def find_all_paths(current_node: Node, final_destination: Node, visited: List[Node], path):
+        def find_all_paths(current_node: Node, final_destination: Node, visited: List[Node], path: List[TransportPathParticipation]):
             if (current_node == final_destination):
-                result.append(TransportPath(terminus={start_node.item, end_node.item}, route=path))
+                result.append(TransportPath(start = start_node.item, end = end_node.item, route=path))
                 return
             new_visited = visited.copy()
             new_visited.append(current_node)
             for edge in current_node.edges:
                 if (edge.destination not in visited):
                     new_path = path.copy()
-                    new_path.append(edge.window)
+                    new_path.append(edge.aperture)
                     find_all_paths(edge.destination, final_destination, new_visited, new_path)
 
         find_all_paths(start_node, end_node, excluded_nodes, [])
