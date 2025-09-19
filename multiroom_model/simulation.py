@@ -23,10 +23,10 @@ class Simulation:
         @brief Initialize the Simulation with
         details about the building, rooms and windows.
 
-        @param global_settings Settings for the simulation which are independent of any one room or window.
-        @param rooms Information about the rooms.
-        @param windows Information about the windows.
-        @param processes The number of processes to use when solving.
+        @param global_settings: Settings for the simulation which are independent of any one room or window.
+        @param rooms: Information about the rooms.
+        @param windows: Information about the windows.
+        @param processes: The number of processes to use when solving.
         """
 
         # Number of cores to use in multiprocessing
