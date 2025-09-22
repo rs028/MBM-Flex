@@ -1,13 +1,14 @@
-from typing import List, Any, Dict, Set
+from typing import List,  Dict, Union
 from dataclasses import dataclass
 from .aperture import Aperture, Side
+from room_chemistry import RoomChemistry as Room
 
 
 @dataclass
 class TransportPathParticipation:
     """
         @brief The involvement of an aperture in a transport path
-        If reversed then the 2nds room of the aperture comes first in the transport path
+        If reversed then the 2nd room of the aperture comes first in the transport path
     """
     aperture: Aperture
     reversed: bool = False
@@ -19,13 +20,13 @@ class TransportPath:
         Defined by the ordered list of Apertures traversed
     """
 
-    def __init__(self, start: Any, end: Any, route: List[TransportPathParticipation]):
-        self.start: Any = start
-        self.end: Any = end
+    def __init__(self, start: Union[Room | Side], end: Union[Room | Side], route: List[TransportPathParticipation]):
+        self.start: Union[Room | Side] = start
+        self.end: Union[Room | Side] = end
         self.route: List[TransportPathParticipation] = route
 
 
-def paths_through_building(rooms: List[Any], apertures: List[Aperture]) -> List[TransportPath]:
+def paths_through_building(rooms: List[Room], apertures: List[Aperture]) -> List[TransportPath]:
     """
         @brief Given a list of rooms and a list of apertures joining them (either to each other or the outside)
         Produces a list of the unique transport paths from one outside side of the house to another
@@ -35,7 +36,7 @@ def paths_through_building(rooms: List[Any], apertures: List[Aperture]) -> List[
     # build a graph where nodes are either rooms or outsides, and edges are apertures
     @dataclass
     class Node:
-        item: Any
+        item: Union[Room | Side]
         edges: List
 
     @dataclass
@@ -44,17 +45,17 @@ def paths_through_building(rooms: List[Any], apertures: List[Aperture]) -> List[
         destination: Node
         aperture: TransportPathParticipation
 
-    graph: Dict[Any, Node] = {}
+    graph: Dict[Union[Room | Side], Node] = {}
     for s in [Side.Back, Side.Front, Side.Left, Side.Right]:
         graph[s] = Node(item=s, edges=[])
     for r in rooms:
         graph[r] = Node(item=r, edges=[])
 
-    for w in apertures:
-        node_1: Node = graph[w.room1]
-        node_2: Node = graph[w.room2 or w.side_of_room_1]
-        node_1.edges.append(Edge(source=node_1, destination=node_2, aperture=TransportPathParticipation(w, False)))
-        node_2.edges.append(Edge(source=node_2, destination=node_1, aperture=TransportPathParticipation(w, True)))
+    for a in apertures:
+        node_1: Node = graph[a.room1]
+        node_2: Node = graph[a.room2]
+        node_1.edges.append(Edge(source=node_1, destination=node_2, aperture=TransportPathParticipation(a, False)))
+        node_2.edges.append(Edge(source=node_2, destination=node_1, aperture=TransportPathParticipation(a, True)))
 
     # method to find all the paths from one start node to an end node
 
@@ -67,7 +68,7 @@ def paths_through_building(rooms: List[Any], apertures: List[Aperture]) -> List[
         # recursive utility function
         def find_all_paths(current_node: Node, final_destination: Node, visited: List[Node], path: List[TransportPathParticipation]):
             if (current_node == final_destination):
-                result.append(TransportPath(start = start_node.item, end = end_node.item, route=path))
+                result.append(TransportPath(start=start_node.item, end=end_node.item, route=path))
                 return
             new_visited = visited.copy()
             new_visited.append(current_node)

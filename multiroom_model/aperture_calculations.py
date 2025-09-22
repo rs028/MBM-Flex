@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import List, Dict, Any, Tuple
+from typing import List, Union, Tuple
+from room_chemistry import RoomChemistry as Room
 from .aperture import Aperture, Side
 from .transport_paths import TransportPath
 from .global_settings import GlobalSettings
@@ -7,14 +8,14 @@ from .wind_definition import WindDefinition
 import math
 
 
-def transport_path_contains_room(room: Any, transport_path: TransportPath):
+def transport_path_contains_room(room: Room, transport_path: TransportPath):
     for t in transport_path.route:
         if (t.aperture.room1 is room or t.aperture.room2 is room):
             return True
     return False
 
 
-def is_room_cross_ventilated(room: Any, transport_paths: List[TransportPath], wind_speed: float, wind_direction: float, building_direction_in_radians: float):
+def is_room_cross_ventilated(room: Room, transport_paths: List[TransportPath], wind_speed: float, wind_direction: float, building_direction_in_radians: float):
     for t in transport_paths:
         if transport_path_contains_room(room, t):
             if (transport_path_windspeed(t, wind_speed, wind_direction, building_direction_in_radians) != 0.0):
@@ -22,7 +23,7 @@ def is_room_cross_ventilated(room: Any, transport_paths: List[TransportPath], wi
     return False
 
 
-def room_has_outdoor_aperture(room: Any, apertures: List[Aperture]):
+def room_has_outdoor_aperture(room: Room, apertures: List[Aperture]):
     return any((a.room1 == room and type(a.room2) is Side for a in apertures))
 
 
@@ -56,7 +57,7 @@ def transport_path_windspeed(transport_path: TransportPath, wind_speed: float, w
     return wind_speed * math.cos(wind_direction-t_p_angle)
 
 
-def flow_advection(io_windspd, oarea, Cd, Cp, air_density):
+def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_density: float)->float:
     '''
     Calculate the advection flow through an opening (door or window), given its area
     and the component of ambient wind passing through it.
@@ -93,7 +94,7 @@ def flow_advection(io_windspd, oarea, Cd, Cp, air_density):
     return adv_flow
 
 
-def flow_exchange(category):
+def flow_exchange(category: int):
     # TODO: this needs some calculation or something
     if category == 1:
         return 111
@@ -112,8 +113,8 @@ class Fluxes:
     """
         @brief A dataclass to store fluxes between 2 rooms from advection and exchange fluxes
     """
-    room_1: Any
-    room_2: Any
+    room_1: Room
+    room_2: Union[Room | Side]
     from_1_to_2: float
     from_2_to_1: float
 
@@ -195,7 +196,7 @@ class ApertureCalculation:
 
             return Fluxes(
                 room_1=self.aperture.room1,
-                room_2=self.aperture.room1,
+                room_2=self.aperture.room2,
                 from_1_to_2=advection,
                 from_2_to_1=0
             )
@@ -204,7 +205,7 @@ class ApertureCalculation:
 
             return Fluxes(
                 room_1=self.aperture.room1,
-                room_2=self.aperture.room1,
+                room_2=self.aperture.room2,
                 from_1_to_2=0,
                 from_2_to_1=-advection
             )
@@ -214,7 +215,7 @@ class ApertureCalculation:
 
             return Fluxes(
                 room_1=self.aperture.room1,
-                room_2=self.aperture.room1,
+                room_2=self.aperture.room2,
                 from_1_to_2=exchange,
                 from_2_to_1=exchange
             )
