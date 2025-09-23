@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List
-from time_dep_value import TimeDependentValue
+from .time_dep_value import TimeDependentValue
 
 @dataclass
 class WindDefinition:
@@ -12,4 +12,4 @@ class WindDefinition:
     building_direction: float
     wind_speed: TimeDependentValue
     wind_direction: TimeDependentValue
-    in_radians = True
+    in_radians: bool = True
