@@ -1,5 +1,6 @@
 from typing import Union, Any
 from enum import Enum
+from .room_chemistry import RoomChemistry as Room
 
 
 class Side(Enum):
@@ -22,7 +23,8 @@ class Aperture:
         May include the side of the room where the aperture is situated
     """
 
-    def __init__(self, room1: Any, room2: Union[Any | Side], side_of_room_1: Side = Side.Unknown):
+    def __init__(self, room1: Room, room2: Union[Room | Side], area: float = 0, side_of_room_1: Side = Side.Unknown):
         self.room1 = room1
         self.room2 = room2
         self.side_of_room_1 = side_of_room_1
+        self.area = area

@@ -26,3 +26,8 @@
     + back-right
 
 This process gives us all the paths between any 2 outside nodes
+
+
+Directions
+
+![alt text](image-4.png)

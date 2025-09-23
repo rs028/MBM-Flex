@@ -1,7 +1,7 @@
 from typing import List,  Dict, Union
 from dataclasses import dataclass
 from .aperture import Aperture, Side
-from room_chemistry import RoomChemistry as Room
+from .room_chemistry import RoomChemistry as Room
 
 
 @dataclass
@@ -62,6 +62,8 @@ def paths_through_building(rooms: List[Room], apertures: List[Aperture]) -> List
     def all_paths_between(start_node, end_node) -> List[TransportPath]:
         result: List[TransportPath] = []
 
+        # we don't want to be able to leave the building and reenter it
+        # exclude those outsides which are not the start or end
         excluded_nodes = [r for r in [graph[Side.Front], graph[Side.Left], graph[Side.Back],
                                       graph[Side.Right]] if r is not start_node and r is not end_node]
 
@@ -78,6 +80,7 @@ def paths_through_building(rooms: List[Room], apertures: List[Aperture]) -> List
                     new_path.append(edge.aperture)
                     find_all_paths(edge.destination, final_destination, new_visited, new_path)
 
+        # invoke the recursive function
         find_all_paths(start_node, end_node, excluded_nodes, [])
         return result
 

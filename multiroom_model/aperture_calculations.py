@@ -57,7 +57,7 @@ def transport_path_windspeed(transport_path: TransportPath, wind_speed: float, w
     return wind_speed * math.cos(wind_direction-t_p_angle)
 
 
-def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_density: float)->float:
+def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_density: float):
     '''
     Calculate the advection flow through an opening (door or window), given its area
     and the component of ambient wind passing through it.
@@ -85,7 +85,7 @@ def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_de
     flow_coeff = Cd * oarea
 
     # advection flow (in m3/s)
-    adv_flow = flow_coeff * sqrt(2/air_density) * (delta_P**flow_m)
+    adv_flow = flow_coeff * math.sqrt(2/air_density) * (delta_P**flow_m)
 
     print('|-------> delta_P = ', delta_P)
     print('|-------> flow_coeff = ', flow_coeff)
@@ -124,6 +124,13 @@ class ApertureCalculation:
         @brief A class which performs the calculations of advection flow and category of an aperture
 
     """
+    @dataclass
+    class Contribution:
+        path: TransportPath
+        reversed: bool
+        position_down_path: int
+        position_up_path: int
+        path_length: int
 
     aperture: Aperture = None
     global_settings: GlobalSettings = None
@@ -133,13 +140,14 @@ class ApertureCalculation:
     building_direction_in_radians: float
     wind_definition: WindDefinition = None
     air_density: float = 0
-    building_pressure_coefficients: float = 0
+    building_pressure_coefficients: Tuple[float, float] = 0, 0
+    contributions: List[Contribution] = []
 
-    contributions: List[Tuple[TransportPath, bool, int, int, int]] = []
+
 
     def has_advection_flow(self, wind_speed: float, wind_direction: float):
-        for path, _, _, _, _ in self.contributions:
-            value = transport_path_windspeed(path, wind_speed, wind_direction, self.building_direction_in_radians)
+        for contribution in self.contributions:
+            value = transport_path_windspeed(contribution.path, wind_speed, wind_direction, self.building_direction_in_radians)
             if value != 0:
                 return True
         return False
@@ -147,16 +155,16 @@ class ApertureCalculation:
     def advection_flow_rate(self, wind_speed: float, wind_direction: float):
         # TODO: is it right that we just sum these contributions
         sum = 0
-        for path, reversed, position_down_path, position_up_path, path_length in self.contributions:
-            path_windspeed = transport_path_windspeed(path,
+        for contribution in self.contributions:
+            path_windspeed = transport_path_windspeed(contribution.path,
                                                       wind_speed,
                                                       wind_direction,
                                                       self.building_direction_in_radians)
 
-            position = position_down_path if path_windspeed > 0 else position_up_path
-            apperture_windspeed = -path_windspeed if reversed else path_windspeed
+            position = contribution.position_down_path if path_windspeed > 0 else contribution.position_up_path
+            apperture_windspeed = -path_windspeed if contribution.reversed else path_windspeed
 
-            discharge_coefficient = 0.7/(1 + position/path_length)
+            discharge_coefficient = 0.7/(1 + position/contribution.path_length)
 
             sum += flow_advection(apperture_windspeed,
                                   self.aperture.area,
@@ -173,7 +181,11 @@ class ApertureCalculation:
                                     wind_direction,
                                     self.building_direction_in_radians):
             return 1
-        elif type(self.aperture.room2) is not Side and is_room_cross_ventilated(self.aperture.room2):
+        elif type(self.aperture.room2) is not Side and is_room_cross_ventilated(self.aperture.room2,
+                                    self.transport_paths,
+                                    wind_speed,
+                                    wind_direction,
+                                    self.building_direction_in_radians):
             return 1
         elif self.is_outdoor_aperture:
             return 2
@@ -189,7 +201,7 @@ class ApertureCalculation:
     def trans_matrix_contributions(self, time: float):
         wind_speed = self.wind_definition.wind_speed.value_at_time(time)
         wind_direction = self.wind_definition.wind_direction.value_at_time(time)
-        wind_direction_in_radians = wind_direction/180.0*math.pi
+        wind_direction_in_radians = wind_direction if self.wind_definition.in_radians else wind_direction/180.0*math.pi
 
         advection = self.advection_flow_rate(self, wind_speed, wind_direction_in_radians)
         if (advection > 0):
