@@ -8,6 +8,7 @@ import math
 
 _zero_advection_tolerance: float = 1.0e-5
 
+
 def transport_path_contains_room(room: Room, transport_path: TransportPath):
     for t in transport_path.route:
         if (t.aperture.room1 is room or t.aperture.room2 is room):
