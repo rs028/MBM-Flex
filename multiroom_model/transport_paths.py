@@ -4,6 +4,7 @@ from .aperture import Aperture, Side
 
 Room = TypeVar('Room')
 
+
 @dataclass
 class TransportPathParticipation:
     """
@@ -62,23 +63,19 @@ def paths_through_building(rooms: List[Room], apertures: List[Aperture]) -> List
     def all_paths_between(start_node, end_node) -> List[TransportPath]:
         result: List[TransportPath] = []
 
-        # we don't want to be able to leave the building and reenter it
-        # exclude those outsides which are not the start or end
-        excluded_nodes = [r for r in [graph[Side.Front], graph[Side.Left], graph[Side.Back],
-                                      graph[Side.Right]] if r is not start_node and r is not end_node]
-
         # recursive utility function
         def find_all_paths(current_node: Node, final_destination: Node, visited: List[Node], path: List[TransportPathParticipation]):
-            if (current_node == final_destination):
-                result.append(TransportPath(start=start_node.item, end=end_node.item, route=path))
-                return
-            new_visited = visited.copy()
-            new_visited.append(current_node)
+            new_visited = visited + [current_node]
             for edge in current_node.edges:
-                if (edge.destination not in visited):
-                    new_path = path.copy()
-                    new_path.append(edge.aperture)
+                new_path = path + [edge.aperture]
+                if (edge.destination == final_destination):
+                    result.append(TransportPath(start=start_node.item, end=end_node.item, route=new_path))
+                elif (edge.destination not in visited):
                     find_all_paths(edge.destination, final_destination, new_visited, new_path)
+
+        # we don't want to be able to leave the building and reenter it
+        # exclude the outside nodes from path
+        excluded_nodes = [graph[Side.Front], graph[Side.Left], graph[Side.Back], graph[Side.Right]]
 
         # invoke the recursive function
         find_all_paths(start_node, end_node, excluded_nodes, [])
