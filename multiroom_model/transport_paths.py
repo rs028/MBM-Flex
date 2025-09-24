@@ -30,6 +30,7 @@ def paths_through_building(rooms: List[Room], apertures: List[Aperture]) -> List
         @brief Given a list of rooms and a list of apertures joining them (either to each other or the outside)
         Produces a list of the unique transport paths from one outside side of the house to another
         Each path goes through each room only once, preventing cycles
+        Note that a path and its exact reversal are NOT both in the list, this is to prevent double-counting paths.
     """
 
     # build a graph where nodes are either rooms or outsides, and edges are apertures
@@ -83,7 +84,7 @@ def paths_through_building(rooms: List[Room], apertures: List[Aperture]) -> List
         find_all_paths(start_node, end_node, excluded_nodes, [])
         return result
 
-    # Use this method 6 times to accumulate all routes between the 4 outside nodes
+    # Use this method 6 times to accumulate all routes between the 4 outside nodes, and not their exact reversals
     result: List[TransportPath] = []
     result.extend(all_paths_between(graph[Side.Front], graph[Side.Left]))
     result.extend(all_paths_between(graph[Side.Front], graph[Side.Back]))
