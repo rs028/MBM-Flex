@@ -1,8 +1,8 @@
-from typing import List,  Dict, Union
+from typing import List,  Dict, Union, TypeVar
 from dataclasses import dataclass
 from .aperture import Aperture, Side
-from .room_chemistry import RoomChemistry as Room
 
+Room = TypeVar('Room')
 
 @dataclass
 class TransportPathParticipation:

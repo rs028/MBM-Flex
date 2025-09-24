@@ -1,6 +1,7 @@
-from typing import Union, Any
+from typing import Union, TypeVar
 from enum import Enum
-from .room_chemistry import RoomChemistry as Room
+
+Room = TypeVar('Room')
 
 
 class Side(Enum):

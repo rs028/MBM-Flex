@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import List, Union, Tuple
-from .room_chemistry import RoomChemistry as Room
+from typing import List, Union, Tuple, TypeVar
 from .aperture import Aperture, Side
 from .transport_paths import TransportPath
 from .wind_definition import WindDefinition
 import math
+
+Room = TypeVar('Room')
 
 _zero_advection_tolerance: float = 1.0e-5
 
