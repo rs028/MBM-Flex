@@ -1,5 +1,6 @@
 from typing import List,  Dict, Union, TypeVar
 from dataclasses import dataclass
+from itertools import combinations
 from .aperture import Aperture, Side
 
 Room = TypeVar('Room')
@@ -46,8 +47,10 @@ def paths_through_building(rooms: List[Room], apertures: List[Aperture]) -> List
         destination: Node
         aperture: TransportPathParticipation
 
+    outsides = [Side.Front, Side.Left, Side.Back, Side.Right]
+
     graph: Dict[Union[Room | Side], Node] = {}
-    for s in [Side.Back, Side.Front, Side.Left, Side.Right]:
+    for s in outsides:
         graph[s] = Node(item=s, edges=[])
     for r in rooms:
         graph[r] = Node(item=r, edges=[])
@@ -75,7 +78,7 @@ def paths_through_building(rooms: List[Room], apertures: List[Aperture]) -> List
 
         # we don't want to be able to leave the building and reenter it
         # exclude the outside nodes from path
-        excluded_nodes = [graph[Side.Front], graph[Side.Left], graph[Side.Back], graph[Side.Right]]
+        excluded_nodes = list(graph[s] for s in outsides)
 
         # invoke the recursive function
         find_all_paths(start_node, end_node, excluded_nodes, [])
@@ -83,13 +86,10 @@ def paths_through_building(rooms: List[Room], apertures: List[Aperture]) -> List
 
     # Use this method 6 times to accumulate all routes between the 4 outside nodes, and not their exact reversals
     result: List[TransportPath] = []
-    result.extend(all_paths_between(graph[Side.Front], graph[Side.Left]))
-    result.extend(all_paths_between(graph[Side.Front], graph[Side.Back]))
-    result.extend(all_paths_between(graph[Side.Front], graph[Side.Right]))
 
-    result.extend(all_paths_between(graph[Side.Left], graph[Side.Back]))
-    result.extend(all_paths_between(graph[Side.Left], graph[Side.Right]))
-
-    result.extend(all_paths_between(graph[Side.Back], graph[Side.Right]))
+    # Use all combinations of 2 of the outside nodes (there are 6 combinations of 2 outside nodes: 4C2=6)
+    # We don't use permutations, because that would double-count the paths by reversing the start and end
+    for start, end in combinations(outsides, 2):
+        result.extend(all_paths_between(graph[start], graph[end]))
 
     return result
