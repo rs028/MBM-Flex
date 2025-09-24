@@ -1,7 +1,6 @@
 import unittest
 from multiroom_model.aperture import Aperture, Side
-from multiroom_model.transport_paths import TransportPath, paths_through_building
-from dataclasses import dataclass
+from multiroom_model.transport_paths import paths_through_building
 
 
 class MockRoom:

@@ -290,7 +290,7 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
         self.assertEqual(self.calculations[2].exchange_category(wind_speed=10, wind_direction=math.pi/2), 4)
 
     @patch('multiroom_model.aperture_calculations.flow_exchange')
-    def test_exchange_flow_rate_returns_known_value(self, mock):
+    def test_exchange_flow_rate(self, mock):
         mock.return_value = 1.234
         # everything cross ventilated if the wind is in the correct direction
         for c in self.calculations:
@@ -314,7 +314,7 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
 
     @patch('multiroom_model.aperture_calculations.flow_advection')
     @patch('multiroom_model.aperture_calculations.flow_exchange')
-    def test_trans_matrix_contributions_positive_flow(self, mock_flow_exchange, mock_flow_advection):
+    def test_trans_matrix_contributions(self, mock_flow_exchange, mock_flow_advection):
         mock_flow_advection.side_effect = lambda *args, **kwargs: args[0]*1.234
         mock_flow_exchange.return_value = 0.123
         self.wind_definition.wind_speed.value_at_time.return_value = 1

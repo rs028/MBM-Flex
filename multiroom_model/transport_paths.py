@@ -14,16 +14,15 @@ class TransportPathParticipation:
     reversed: bool = False
 
 
+@dataclass
 class TransportPath:
     """
         @brief A route from a start to an end (probably outside sides of the house)
         Defined by the ordered list of Apertures traversed
     """
-
-    def __init__(self, start: Union[Room | Side], end: Union[Room | Side], route: List[TransportPathParticipation]):
-        self.start: Union[Room | Side] = start
-        self.end: Union[Room | Side] = end
-        self.route: List[TransportPathParticipation] = route
+    start: Union[Room | Side]
+    end: Union[Room | Side]
+    route: List[TransportPathParticipation]
 
 
 def paths_through_building(rooms: List[Room], apertures: List[Aperture]) -> List[TransportPath]:
