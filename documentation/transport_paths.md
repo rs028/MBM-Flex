@@ -2,9 +2,10 @@
 
 Transport paths describe a route through the building from one outside area to a different outside area (eg front to back).
 
-![alt text](image-5.png)
-
 These are the routes through which an airflow could go through rooms of the building. These can create the advection flows if combined with a wind.
+
+A single floor houseplan with 3 example transport paths
+![alt text](image-5.png)
 
 ## Deduction Algorithm
 
