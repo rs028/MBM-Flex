@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import List, Union, Tuple, TypeVar
 from .aperture import Aperture, Side
 from .transport_paths import TransportPath
-from .wind_definition import WindDefinition
 import math
 
 Room = TypeVar('Room')
@@ -134,8 +133,6 @@ class Fluxes:
     """
         @brief A dataclass to store fluxes between 2 rooms from advection and exchange fluxes
     """
-    room_1: Room
-    room_2: Union[Room | Side]
     from_1_to_2: float
     from_2_to_1: float
 
@@ -162,7 +159,6 @@ class ApertureCalculation:
     is_outdoor_aperture: bool = False
     has_room_with_outdoor_aperture: bool = False
     building_direction_in_radians: float
-    wind_definition: WindDefinition = None
     air_density: float = 0
     building_pressure_coefficients: Tuple[float, float] = 0, 0
     contributions: List[Contribution] = []
@@ -171,7 +167,7 @@ class ApertureCalculation:
                  aperture: Aperture,
                  transport_paths: List[TransportPath],
                  all_apertures: List[Aperture],
-                 wind_definition: WindDefinition,
+                 building_direction_in_radians: float = 0,
                  air_density: float = 0,
                  building_pressure_coefficients: Tuple[float, float] = (0, 0)):
         self.aperture = aperture
@@ -179,13 +175,13 @@ class ApertureCalculation:
         self.is_outdoor_aperture = (type(aperture.room2) is Side)
         self.has_room_with_outdoor_aperture = room_has_outdoor_aperture(
             aperture.room1, all_apertures) or room_has_outdoor_aperture(aperture.room2, all_apertures)
-        self.building_direction_in_radians = wind_definition.building_direction \
-            if wind_definition.in_radians \
-            else math.radians(wind_definition.building_direction)
-        self.wind_definition = wind_definition
+        self.building_direction_in_radians = building_direction_in_radians
         self.air_density = air_density
         self.building_pressure_coefficients = building_pressure_coefficients
         self.contributions = self._build_contributions(aperture, transport_paths)
+
+        if (building_pressure_coefficients[0] < building_pressure_coefficients[1]):
+            raise Exception("The higher building pressure coefficient should come first")
 
     @classmethod
     def _build_contributions(cls, aperture: Aperture, transport_paths: List[TransportPath]) -> List[Contribution]:
@@ -278,31 +274,24 @@ class ApertureCalculation:
         category = self.exchange_category(wind_speed, wind_direction)
         return flow_exchange(category)
 
-    def trans_matrix_contributions(self, time: float):
+    def trans_matrix_contributions(self, wind_speed: float, wind_direction_in_radians: float):
         """
-        the advection or exchange fluxes at a given time
+        the advection or exchange fluxes resulting from given wind conditions
         """
-        wind_speed = self.wind_definition.wind_speed.value_at_time(time)
-        wind_direction = self.wind_definition.wind_direction.value_at_time(time)
-        wind_direction_in_radians = wind_direction if self.wind_definition.in_radians else math.radians(wind_direction)
 
         advection = self.advection_flow_rate(wind_speed, wind_direction_in_radians)
         if (advection > _zero_advection_tolerance):
             # Advection flow from room 1 to room 2
 
             return Fluxes(
-                room_1=self.aperture.room1,
-                room_2=self.aperture.room2,
                 from_1_to_2=advection,
                 from_2_to_1=0
             )
 
         elif (advection < -_zero_advection_tolerance):
-            # Advection flow from room 12 to room 1
+            # Advection flow from room 2 to room 1
 
             return Fluxes(
-                room_1=self.aperture.room1,
-                room_2=self.aperture.room2,
                 from_1_to_2=0,
                 from_2_to_1=-advection
             )
@@ -312,8 +301,6 @@ class ApertureCalculation:
             exchange = self.exchange_flow_rate(wind_speed, wind_direction_in_radians)
 
             return Fluxes(
-                room_1=self.aperture.room1,
-                room_2=self.aperture.room2,
                 from_1_to_2=exchange,
                 from_2_to_1=exchange
             )
