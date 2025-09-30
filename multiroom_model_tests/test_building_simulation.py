@@ -105,3 +105,15 @@ class TestBuildingSimulation(unittest.TestCase):
                              sim_calc.trans_matrix_contributions(1, 0).from_1_to_2)
             self.assertEqual(calculator.trans_matrix_contributions(1, 0).from_2_to_1,
                              sim_calc.trans_matrix_contributions(1, 0).from_2_to_1)
+
+
+    def test_running(self):
+        
+        initial_conditions = dict([(r, 'initial_concentrations.txt') for r in self.rooms])
+
+        result = self.simulation.run(
+            t0=0.0,
+            t_total=25,
+            t_interval=3.0,
+            init_conditions=initial_conditions
+        )

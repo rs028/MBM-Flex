@@ -1,3 +1,4 @@
+import math
 from multiroom_model.global_settings import GlobalSettings
 from multiroom_model.simulation import Simulation
 from multiroom_model.room_factory import (
@@ -14,6 +15,13 @@ from multiroom_model.aperture_factory import (
 
 # Define some global settings which are true for the whole building
 if __name__ == '__main__':
+
+    ambient_press = 1013.0   # ambient pressure (mbar) is assumed to be constant, and is the same in all rooms
+    ambient_temp = 293.0     # ambient temperature (K) is assumed to be constant
+    # ambient air density (assuming dry air), in kg/m3
+    rho = (100*ambient_press) / (287.050 * ambient_temp)
+
+
     global_settings = GlobalSettings(
         filename='chem_mech/mcm_subset.fac',
         INCHEM_additional=False,
@@ -30,7 +38,11 @@ if __name__ == '__main__':
         date='21-06-2020',
         lat=45.4,
         path=None,
-        reactions_output=False
+        reactions_output=False,
+        building_direction_in_radians=math.radians(180),
+        air_density=rho,
+        upwind_pressure_coefficient=0.3,
+        downwind_pressure_coefficient=-0.2
     )
 
     # Construct the rooms
@@ -45,16 +57,15 @@ if __name__ == '__main__':
         populate_room_with_tvar_file(room, f"config_rooms/mr_tvar_room_params_{i}.csv")
         populate_room_with_expos_file(room, f"config_rooms/mr_tvar_expos_params_{i}.csv")
 
-
-    # Populate the apertures, 
+    # Populate the apertures,
     # uses the "double definition" method because we expect each aperture will appear twice in the csv file.
     apertures = build_apertures_from_double_definition("config_rooms/mr_tcon_building.csv", rooms_dictionary)
 
     # Populate the definition of the wind
-    wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv", 
+    wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv",
                                             building_direction=180,
                                             in_radians=False)
-    
+
     # We dont need the keys of the rooms anymore now we have populated them
     rooms = rooms_dictionary.values()
 
@@ -73,7 +84,7 @@ if __name__ == '__main__':
     # This lines uses the same file for all the rooms, but this could be different for the different rooms
     initial_conditions = dict((r, 'initial_concentrations.txt') for r in rooms)
 
-    # Run the simulation starting at t=0, for 25 seconds, 
+    # Run the simulation starting at t=0, for 25 seconds,
     # interrupt the inchempy solver to apply the effects of windows every 6 seconds
     result = simulation.run(
         t0=0,

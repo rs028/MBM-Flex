@@ -1,4 +1,6 @@
 from typing import List, Tuple, Dict, Any
+import math
+import re
 from .room_chemistry import RoomChemistry
 from .aperture import Aperture, Side
 from .room_inchempy_evolver import RoomInchemPyEvolver
@@ -73,7 +75,10 @@ class Simulation:
             while (solved_time+t_interval <= t_total):
 
                 # For each aperture  calculate a aperture result  (performed in parallel)
-                args = [(w, solved_time, room_results) for i, w in enumerate(self._aperture_calculators)]
+                wind_speed = self._wind_definition.wind_speed.value_at_time(solved_time)
+                wind_direction = self._wind_definition.wind_direction.value_at_time(solved_time)
+                wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(wind_direction)
+                args = [(w, wind_speed, wind_direction_in_radians, room_results) for i, w in enumerate(self._aperture_calculators)]
                 aperture_results = pool.starmap(self.run_aperture_calculation_starmap, args)
 
                 # Use the aperture results in adjust the room results into the input for the next iteration
@@ -94,7 +99,10 @@ class Simulation:
             if solved_time < t_total:
 
                 # For each aperture calculate a aperture result  (performed in parallel)
-                args = [(w, solved_time, room_results) for i, w in enumerate(self._aperture_calculators)]
+                wind_speed = self._wind_definition.wind_speed.value_at_time(solved_time)
+                wind_direction = self._wind_definition.wind_direction.value_at_time(solved_time)
+                wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(wind_direction)
+                args = [(w, wind_speed,wind_direction_in_radians, room_results) for i, w in enumerate(self._aperture_calculators)]
                 aperture_results = pool.starmap(self.run_aperture_calculation_starmap, args)
 
                 # Use the aperture results in adjust the room results into the input for the next iteration
@@ -145,6 +153,7 @@ class Simulation:
                                     global_settings.downwind_pressure_coefficient)), room_1_index, room_2_index
 
     @staticmethod
-    def run_aperture_calculation_starmap(aperture, t0, room_results):
-        # TODO: Implement a window evolver and run it
-        return 0
+    def run_aperture_calculation_starmap(aperture_calculator_data, wind_speed, wind_direction, room_results):
+        aperture_calculator, room1_index, room2_index = aperture_calculator_data
+        flux = aperture_calculator.trans_matrix_contributions(wind_speed, wind_direction)
+        return flux, room1_index, room2_index
