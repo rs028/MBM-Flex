@@ -6,6 +6,11 @@ from multiroom_model.room_factory import (
     populate_room_with_tvar_file,
     populate_room_with_expos_file
 )
+from multiroom_model.aperture_factory import (
+    build_apertures,
+    build_apertures_from_double_definition,
+    build_wind_definition
+)
 
 # Define some global settings which are true for the whole building
 if __name__ == '__main__':
@@ -40,6 +45,16 @@ if __name__ == '__main__':
         populate_room_with_tvar_file(room, f"config_rooms/mr_tvar_room_params_{i}.csv")
         populate_room_with_expos_file(room, f"config_rooms/mr_tvar_expos_params_{i}.csv")
 
+
+    # Populate the apertures, 
+    # uses the "double definition" method because we expect each aperture will appear twice in the csv file.
+    apertures = build_apertures_from_double_definition("config_rooms/mr_tcon_building.csv", rooms_dictionary)
+
+    # Populate the definition of the wind
+    wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv", 
+                                            building_direction=180,
+                                            in_radians=False)
+    
     # We dont need the keys of the rooms anymore now we have populated them
     rooms = rooms_dictionary.values()
 
