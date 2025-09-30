@@ -112,15 +112,8 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
         self.apertures = [aperture1, aperture2, aperture3, aperture4, aperture5]
         self.transport_path = paths_through_building(self.rooms, self.apertures)[0]
 
-        self.wind_definition = WindDefinition(
-            building_direction=0,
-            wind_direction=Mock(),
-            wind_speed=Mock(),
-            in_radians=True
-        )
-
         self.calculations = list(
-            ApertureCalculation(a, [self.transport_path], self.apertures, self.wind_definition)
+            ApertureCalculation(a, [self.transport_path], self.apertures, building_direction_in_radians= math.radians(0))
             for a in self.apertures)
 
     def test_calculation_construction(self):
@@ -317,11 +310,9 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
     def test_trans_matrix_contributions(self, mock_flow_exchange, mock_flow_advection):
         mock_flow_advection.side_effect = lambda *args, **kwargs: args[0]*1.234
         mock_flow_exchange.return_value = 0.123
-        self.wind_definition.wind_speed.value_at_time.return_value = 1
 
         with self.subTest("positive advection flow"):
-            self.wind_definition.wind_direction.value_at_time.return_value = 0
-            result = self.calculations[0].trans_matrix_contributions(time=0)
+            result = self.calculations[0].trans_matrix_contributions(1,0)
 
             windspeed, _, Cd, _, _ = mock_flow_advection.call_args[0]
             self.assertEqual(windspeed, 1)
@@ -330,7 +321,7 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
             self.assertEqual(result.from_1_to_2, 1.234)
             self.assertEqual(result.from_2_to_1, 0)
 
-            result = self.calculations[4].trans_matrix_contributions(time=0)
+            result = self.calculations[4].trans_matrix_contributions(1,0)
 
             windspeed, _, Cd, _, _ = mock_flow_advection.call_args[0]
             self.assertEqual(windspeed, -1)
@@ -340,8 +331,7 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
             self.assertEqual(result.from_2_to_1, 1.234)
 
         with self.subTest("negative advection flow"):
-            self.wind_definition.wind_direction.value_at_time.return_value = math.pi
-            result = self.calculations[0].trans_matrix_contributions(time=0)
+            result = self.calculations[0].trans_matrix_contributions(1, math.pi)
 
             windspeed, _, Cd, _, _ = mock_flow_advection.call_args[0]
             self.assertEqual(windspeed, -1)
@@ -350,7 +340,7 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
             self.assertEqual(result.from_1_to_2, 0)
             self.assertEqual(result.from_2_to_1, 1.234)
 
-            result = self.calculations[4].trans_matrix_contributions(time=0)
+            result = self.calculations[4].trans_matrix_contributions(1, math.pi)
 
             windspeed, _, Cd, _, _ = mock_flow_advection.call_args[0]
             self.assertEqual(windspeed, 1)
@@ -360,33 +350,32 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
             self.assertEqual(result.from_2_to_1, 0)
 
         with self.subTest("exchange flow"):
-            self.wind_definition.wind_direction.value_at_time.return_value = math.pi/2.0
 
-            result = self.calculations[0].trans_matrix_contributions(time=0)
+            result = self.calculations[0].trans_matrix_contributions(1,math.pi/2.0)
             self.assertEqual(result.from_1_to_2, 0.123)
             self.assertEqual(result.from_2_to_1, 0.123)
             catagory = mock_flow_exchange.call_args[0][0]
             self.assertEqual(catagory, 2)
 
-            result = self.calculations[1].trans_matrix_contributions(time=0)
+            result = self.calculations[1].trans_matrix_contributions(1,math.pi/2.0)
             catagory = mock_flow_exchange.call_args[0][0]
             self.assertEqual(catagory, 3)
             self.assertEqual(result.from_1_to_2, 0.123)
             self.assertEqual(result.from_2_to_1, 0.123)
 
-            result = self.calculations[2].trans_matrix_contributions(time=0)
+            result = self.calculations[2].trans_matrix_contributions(1,math.pi/2.0)
             catagory = mock_flow_exchange.call_args[0][0]
             self.assertEqual(catagory, 4)
             self.assertEqual(result.from_1_to_2, 0.123)
             self.assertEqual(result.from_2_to_1, 0.123)
 
-            result = self.calculations[3].trans_matrix_contributions(time=0)
+            result = self.calculations[3].trans_matrix_contributions(1,math.pi/2.0)
             catagory = mock_flow_exchange.call_args[0][0]
             self.assertEqual(catagory, 3)
             self.assertEqual(result.from_1_to_2, 0.123)
             self.assertEqual(result.from_2_to_1, 0.123)
 
-            result = self.calculations[4].trans_matrix_contributions(time=0)
+            result = self.calculations[4].trans_matrix_contributions(1,math.pi/2.0)
             catagory = mock_flow_exchange.call_args[0][0]
             self.assertEqual(catagory, 2)
             self.assertEqual(result.from_1_to_2, 0.123)
