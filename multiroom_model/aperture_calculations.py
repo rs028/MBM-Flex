@@ -187,6 +187,9 @@ class ApertureCalculation:
         self.building_pressure_coefficients = building_pressure_coefficients
         self.contributions = self._build_contributions(aperture, transport_paths)
 
+        if (building_pressure_coefficients[0] < building_pressure_coefficients[1]):
+            raise Exception("The higher building pressure coefficient should come first")
+
     @classmethod
     def _build_contributions(cls, aperture: Aperture, transport_paths: List[TransportPath]) -> List[Contribution]:
         """
