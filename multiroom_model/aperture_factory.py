@@ -72,7 +72,7 @@ def build_apertures_from_double_definition(csv_file: str, rooms: Dict[int, Room]
     return result
 
 
-def build_wind_definition(csv_file: str, building_direction: float, in_radians:bool=False) -> WindDefinition:
+def build_wind_definition(csv_file: str, in_radians: bool = False) -> WindDefinition:
     """
     Use a csv variables file to populate a wind definition
     """
@@ -83,7 +83,6 @@ def build_wind_definition(csv_file: str, building_direction: float, in_radians:b
     wind_direction = TimeDependentValue(list(zip(times, wind_params["wind_direction"])), continuous=True)
 
     return WindDefinition(
-        building_direction=building_direction,
         wind_speed=wind_speed,
         wind_direction=wind_direction,
         in_radians=False

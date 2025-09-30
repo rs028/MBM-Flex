@@ -25,14 +25,13 @@ class TestBuildingSimulation(unittest.TestCase):
             populate_room_with_expos_file(room, f"config_rooms/mr_tvar_expos_params_{i}.csv")
 
         cls.apertures = build_apertures_from_double_definition("config_rooms/mr_tcon_building.csv", cls.rooms)
-        cls.wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv", 0)
+        cls.wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv")
         cls.rooms = list(cls.rooms.values())
 
         ambient_press = 1013.0   # ambient pressure (mbar) is assumed to be constant, and is the same in all rooms
         ambient_temp = 293.0     # ambient temperature (K) is assumed to be constant
-        # ambient air density (assuming dry air), in kg/m3
-        rho = (100*ambient_press) / (287.050 * ambient_temp)
-
+        
+        rho = (100*ambient_press) / (287.050 * ambient_temp) # ambient air density (assuming dry air), in kg/m3
 
         cls.global_settings = GlobalSettings(
             filename='chem_mech/mcm_subset.fac',
@@ -51,6 +50,7 @@ class TestBuildingSimulation(unittest.TestCase):
             lat=45.4,
             path=None,
             reactions_output=False,
+            building_direction_in_radians=math.radians(180),
             air_density=rho,
             upwind_pressure_coefficient=0.3,
             downwind_pressure_coefficient=-0.2
@@ -63,13 +63,13 @@ class TestBuildingSimulation(unittest.TestCase):
         self.assertEqual(len(transport_paths), 21)
 
         calculators = [
-            ApertureCalculation(a, transport_paths, 
-                                self.apertures, 
-                                self.wind_definition, 
-                                self.global_settings.air_density, 
-                                (self.global_settings.upwind_pressure_coefficient, self.global_settings.downwind_pressure_coefficient))
+            ApertureCalculation(a, transport_paths,
+                                self.apertures,
+                                self.global_settings.building_direction_in_radians,
+                                self.global_settings.air_density,
+                                (self.global_settings.upwind_pressure_coefficient,
+                                 self.global_settings.downwind_pressure_coefficient))
             for a in self.apertures]
-        
 
         for i in range(len(calculators)):
             calculator = calculators[i]
@@ -86,18 +86,22 @@ class TestBuildingSimulation(unittest.TestCase):
                 self.assertTrue(type(sim_room2) is int)
                 self.assertEqual(self.rooms.index(calculator.aperture.room2), sim_room2)
 
-            
-            self.assertFalse(calculator.has_advection_flow(0,0))
-            self.assertFalse(sim_calc.has_advection_flow(0,0))
-            self.assertEqual(calculator.has_advection_flow(0,0), sim_calc.has_advection_flow(0,0))
-            self.assertEqual(calculator.exchange_category(0,0), sim_calc.exchange_category(0,0))
-            self.assertEqual(calculator.exchange_flow_rate(0,0), sim_calc.exchange_flow_rate(0,0))
-            self.assertEqual(calculator.trans_matrix_contributions(0).from_1_to_2, sim_calc.trans_matrix_contributions(0).from_1_to_2)
-            self.assertEqual(calculator.trans_matrix_contributions(0).from_2_to_1, sim_calc.trans_matrix_contributions(0).from_2_to_1)
-            
-            self.assertTrue(calculator.has_advection_flow(1,0))
-            self.assertTrue(sim_calc.has_advection_flow(1,0))
-            self.assertEqual(calculator.has_advection_flow(1,0), sim_calc.has_advection_flow(1,0))
-            self.assertEqual(calculator.advection_flow_rate(1,0), sim_calc.advection_flow_rate(1,0))
-            self.assertEqual(calculator.trans_matrix_contributions(43250).from_1_to_2, sim_calc.trans_matrix_contributions(43250).from_1_to_2)
-            self.assertEqual(calculator.trans_matrix_contributions(43250).from_2_to_1, sim_calc.trans_matrix_contributions(43250).from_2_to_1)
+            self.assertFalse(calculator.has_advection_flow(0, 0))
+            self.assertFalse(sim_calc.has_advection_flow(0, 0))
+            self.assertEqual(calculator.has_advection_flow(0, 0), sim_calc.has_advection_flow(0, 0))
+            self.assertEqual(calculator.exchange_category(0, 0), sim_calc.exchange_category(0, 0))
+            self.assertEqual(calculator.exchange_flow_rate(0, 0), sim_calc.exchange_flow_rate(0, 0))
+            self.assertEqual(calculator.trans_matrix_contributions(0, 0).from_1_to_2,
+                             sim_calc.trans_matrix_contributions(0, 0).from_1_to_2)
+            self.assertEqual(calculator.trans_matrix_contributions(0, 0).from_2_to_1,
+                             sim_calc.trans_matrix_contributions(0, 0).from_2_to_1)
+
+            self.assertTrue(calculator.has_advection_flow(1, 0))
+            self.assertTrue(sim_calc.has_advection_flow(1, 0))
+            self.assertEqual(calculator.exchange_category(1, 0), sim_calc.exchange_category(1, 0))
+            self.assertEqual(calculator.has_advection_flow(1, 0), sim_calc.has_advection_flow(1, 0))
+            self.assertEqual(calculator.advection_flow_rate(1, 0), sim_calc.advection_flow_rate(1, 0))
+            self.assertEqual(calculator.trans_matrix_contributions(1, 0).from_1_to_2,
+                             sim_calc.trans_matrix_contributions(1, 0).from_1_to_2)
+            self.assertEqual(calculator.trans_matrix_contributions(1, 0).from_2_to_1,
+                             sim_calc.trans_matrix_contributions(1, 0).from_2_to_1)

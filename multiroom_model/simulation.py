@@ -20,7 +20,7 @@ class Simulation:
                  global_settings: GlobalSettings,
                  rooms: List[RoomChemistry],
                  apertures: List[Aperture],
-                 wind_definition: WindDefinition=None,
+                 wind_definition: WindDefinition = None,
                  processes: int = 4):
         """
         @brief Initialize the Simulation with
@@ -48,8 +48,9 @@ class Simulation:
 
             # For each aperture, build a ApertureCalculation (performed in parallel)
             transport_paths = paths_through_building(self._rooms, self._apertures)
-            args = [(w, transport_paths, self._apertures, self._rooms, wind_definition, self._global_settings) for w in self._apertures]
-            self._aperture_calculators: List[ApertureCalculation] = pool.starmap(self.build_aperture_calculator_starmap, args)
+            args = [(w, transport_paths, self._apertures, self._rooms, self._global_settings) for w in self._apertures]
+            self._aperture_calculators: List[ApertureCalculation] = pool.starmap(
+                self.build_aperture_calculator_starmap, args)
 
     def run(self, init_conditions: dict, t0: float, t_total: float, t_interval: float):
 
@@ -132,16 +133,16 @@ class Simulation:
         return df
 
     @staticmethod
-    def build_aperture_calculator_starmap(aperture, transport_paths, apertures, rooms, wind_definition, global_settings):
+    def build_aperture_calculator_starmap(aperture, transport_paths, apertures, rooms, global_settings):
         room_1_index = rooms.index(aperture.room1)
         room_2_index = aperture.room2 if type(aperture.room2) == Side else rooms.index(aperture.room2)
         return ApertureCalculation(aperture,
-                                transport_paths,
-                                apertures,
-                                wind_definition,
-                                global_settings.air_density,
-                                (global_settings.upwind_pressure_coefficient,
-                                 global_settings.downwind_pressure_coefficient)), room_1_index, room_2_index
+                                   transport_paths,
+                                   apertures,
+                                   global_settings.building_direction_in_radians,
+                                   global_settings.air_density,
+                                   (global_settings.upwind_pressure_coefficient,
+                                    global_settings.downwind_pressure_coefficient)), room_1_index, room_2_index
 
     @staticmethod
     def run_aperture_calculation_starmap(aperture, t0, room_results):
