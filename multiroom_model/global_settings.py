@@ -19,7 +19,10 @@ class GlobalSettings:
         date: str = '21-06-2020',
         lat: float = 45.4,
         path: str = None,
-        reactions_output: bool = False
+        reactions_output: bool = False,
+        air_density: float = 0.0,
+        upwind_pressure_coefficient:float = 0.3, 
+        downwind_pressure_coefficient: float = -0.2
     ):
         """
         @param filename: Input FACSIMILE format filename.
@@ -53,3 +56,6 @@ class GlobalSettings:
         self.lat = lat
         self.path = path
         self.reactions_output = reactions_output
+        self.air_density = air_density
+        self.upwind_pressure_coefficient = upwind_pressure_coefficient
+        self.downwind_pressure_coefficient = downwind_pressure_coefficient
