@@ -5,21 +5,23 @@ import pandas as pd
 
 
 class ApertureFlowCalculator:
+    indoor_var_list: List[str]
+    outdoor_var_list: List[str]
 
     def __init__(self, all_var_list):
         self.indoor_var_list, self.outdoor_var_list = self.get_trans_vars(all_var_list)
 
     def concentration_changes(self, flux: Fluxes,
                               delta_time: float,
-                              room_1_concentrations: pd.DataFrame,
-                              room_2_concentrations: pd.DataFrame,
+                              room_1_concentrations: pd.Series,
+                              room_2_concentrations: pd.Series,
                               room_1_volume: float,
-                              room_2_volume: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
+                              room_2_volume: float) -> Tuple[pd.Series, pd.Series]:
         flow_from_1_to_2 = flux.from_1_to_2*delta_time
         flow_from_2_to_1 = flux.from_2_to_1*delta_time
 
-        quantities_moved_from_1_to_2 = flow_from_1_to_2 * room_1_concentrations.loc(self.indoor_var_list)
-        quantities_moved_from_2_to_1 = flow_from_2_to_1 * room_2_concentrations.loc(self.indoor_var_list)
+        quantities_moved_from_1_to_2 = flow_from_1_to_2 * room_1_concentrations.loc[self.indoor_var_list]
+        quantities_moved_from_2_to_1 = flow_from_2_to_1 * room_2_concentrations.loc[self.indoor_var_list]
 
         concentration_change_in_room_1 = (quantities_moved_from_2_to_1-quantities_moved_from_1_to_2)/room_1_volume
         concentration_change_in_room_2 = (quantities_moved_from_1_to_2-quantities_moved_from_2_to_1)/room_2_volume
@@ -28,21 +30,28 @@ class ApertureFlowCalculator:
 
     def outdoor_concentration_changes(self, flux: Fluxes,
                                       delta_time: float,
-                                      room_1_concentrations: pd.DataFrame,
-                                      room_1_volume: float) -> Tuple[pd.DataFrame]:
+                                      room_1_concentrations: pd.Series,
+                                      room_1_volume: float) -> Tuple[pd.Series]:
         flow_from_1_to_2 = flux.from_1_to_2*delta_time
         flow_from_2_to_1 = flux.from_2_to_1*delta_time
 
-        quantities_moved_from_1_to_2 = flow_from_1_to_2 * room_1_concentrations.loc(self.indoor_var_list)
+        quantities_moved_from_1_to_2 = flow_from_1_to_2 * room_1_concentrations.loc[self.indoor_var_list]
 
-        outdoor_concentrations = pd.DataFrame()
+        outdoor_concentrations = pd.Series()
         for outdoor_var in self.outdoor_var_list:
             var_without_OUT = outdoor_var[:-3]
-            outdoor_concentrations[var_without_OUT] = room_1_concentrations.loc(outdoor_var)
+            if(var_without_OUT in room_1_concentrations.keys()):
+                outdoor_concentrations.loc[var_without_OUT] = room_1_concentrations.loc[outdoor_var]
 
-        quantities_moved_from_2_to_1 = flow_from_2_to_1 * outdoor_concentrations.loc(self.indoor_var_list)
+        quantities_moved_from_2_to_1 = flow_from_2_to_1 * outdoor_concentrations
 
-        concentration_change_in_room_1 = (quantities_moved_from_2_to_1-quantities_moved_from_1_to_2)/room_1_volume
+        #fill any blanks with 0s so summing the 2 sets doesn't give any nans
+        common_index = quantities_moved_from_1_to_2.index.union(quantities_moved_from_2_to_1.index)
+        q1to2_filled = quantities_moved_from_1_to_2.reindex(common_index, fill_value=0)
+        q2to1_filled = quantities_moved_from_2_to_1.reindex(common_index, fill_value=0)
+
+
+        concentration_change_in_room_1 = (q2to1_filled-q1to2_filled)/room_1_volume
 
         return concentration_change_in_room_1
 

@@ -13,12 +13,13 @@ from multiroom_model.room_factory import (
     populate_room_with_expos_file
 )
 
+from multiroom_model.aperture_flow_calculations import ApertureFlowCalculator
+
 
 class TestApertureFlowCalculations(unittest.TestCase):
 
-
     @classmethod
-    def generate_dataframe(cls):
+    def generate_a_dataframe(cls):
         rooms = build_rooms("config_rooms/mr_tcon_room_params.csv")
         room_ids = list(rooms.keys())
         for i, room in rooms.items():
@@ -47,18 +48,291 @@ class TestApertureFlowCalculations(unittest.TestCase):
 
         evolver = RoomInchemPyEvolver(room, global_settings)
 
-        output_data, integration_times = evolver.run(
+        evolver.inchem.species
+
+        output_data, _ = evolver.run(
             t0=0,
             seconds_to_integrate=0,
             initial_text_file='initial_concentrations.txt'
         )
-        return output_data
-
+        return output_data, evolver.inchem.species
 
     @classmethod
     def setUpClass(cls):
-        cls.dataframe = cls.generate_dataframe()
+        cls.dataframe, cls.species = cls.generate_a_dataframe()
+        cls.sample_species = ["CO", "NO3", "H2O2", "PART100"]
 
-    
-    def test_dataframe(self):
-        print(self.dataframe)
+    def test_species(self):
+        calculator = ApertureFlowCalculator(self.dataframe.columns)
+
+        out_vars_without_out = list(map(lambda i: i[: -3], calculator.outdoor_var_list))
+
+        print(len(self.dataframe.columns))
+        print(len(self.species))
+        print(len(calculator.indoor_var_list))
+        print(len(calculator.outdoor_var_list))
+
+        for s in self.sample_species:
+            self.assertIn(s, self.species)
+            self.assertIn(s, self.dataframe.columns)
+            self.assertIn(s, calculator.indoor_var_list)
+            self.assertIn(f"{s}OUT", calculator.outdoor_var_list)
+            self.assertIn(s, out_vars_without_out)
+
+        for s in calculator.indoor_var_list:
+            pass
+            # self.assertIn(s, self.species)
+
+        for s in out_vars_without_out:
+            pass
+            # self.assertIn(s, calculator.indoor_var_list)
+
+    def test_exchange_transfer_between_rooms_with_matching_concentration(self):
+        calculator = ApertureFlowCalculator(self.dataframe.columns)
+
+        room_1_volume = 100
+        room_2_volume = 76
+
+        room1_concentration = self.dataframe.iloc[-1, :]
+        room2_concentration = self.dataframe.iloc[-1, :]
+
+        exchange_flux = Fluxes(0.2, 0.2)
+        delta_time = 2.14
+
+        room_1_concentration_change, room_2_concentration_change = calculator.concentration_changes(
+            exchange_flux,
+            delta_time,
+            room1_concentration,
+            room2_concentration,
+            room_1_volume,
+            room_2_volume)
+
+        for label, value in room_1_concentration_change.items():
+            self.assertIn(label, calculator.indoor_var_list)
+            self.assertEqual(value, 0)
+
+        for label, value in room_2_concentration_change.items():
+            self.assertIn(label, calculator.indoor_var_list)
+            self.assertEqual(value, 0)
+
+    def test_exchange_transfer_between_rooms_with_concentration_difference(self):
+        calculator = ApertureFlowCalculator(self.dataframe.columns)
+
+        room_1_volume = 100
+        room_2_volume = 76
+
+        room1_concentration = self.dataframe.iloc[-1, :]
+        room2_concentration = self.dataframe.iloc[-1, :]
+
+        room2_concentration.loc["CO"] += 10
+
+        exchange_flux = Fluxes(0.2, 0.2)
+        delta_time = 2.14
+
+        room_1_concentration_change, room_2_concentration_change = calculator.concentration_changes(
+            exchange_flux,
+            delta_time,
+            room1_concentration,
+            room2_concentration,
+            room_1_volume,
+            room_2_volume)
+
+        absolute_CO_change = 0.2*2.14*10
+
+        for label, value in room_1_concentration_change.items():
+
+            expected_change = 0 if label != "CO" else absolute_CO_change/room_1_volume
+
+            self.assertIn(label, calculator.indoor_var_list)
+            self.assertEqual(value, expected_change, f"wrong concentration change for {label}")
+
+        for label, value in room_2_concentration_change.items():
+
+            expected_change = 0 if label != "CO" else -absolute_CO_change/room_2_volume
+
+            self.assertIn(label, calculator.indoor_var_list)
+            self.assertEqual(value, expected_change, f"wrong concentration change for {label}")
+
+    def test_advection_transfer_between_rooms_with_matching_concentration(self):
+        calculator = ApertureFlowCalculator(self.dataframe.columns)
+
+        room_1_volume = 100
+        room_2_volume = 76
+
+        room1_concentration = self.dataframe.iloc[-1, :]
+        room2_concentration = self.dataframe.iloc[-1, :]
+
+        with self.subTest("flow from room 1 to room 2"):
+            exchange_flux = Fluxes(0.4, 0)
+            delta_time = 2.14
+
+            room_1_concentration_change, room_2_concentration_change = calculator.concentration_changes(
+                exchange_flux,
+                delta_time,
+                room1_concentration,
+                room2_concentration,
+                room_1_volume,
+                room_2_volume)
+
+            for label, value in room_1_concentration_change.items():
+                # everything is departing from room 1, hence dependence on room1_concentration
+                expected_change = -0.4*2.14*room1_concentration.loc[label]/room_1_volume
+                self.assertIn(label, calculator.indoor_var_list)
+                self.assertEqual(value, expected_change)
+
+            for label, value in room_2_concentration_change.items():
+                # everything is moving from room 1, hence dependence on room1_concentration
+                expected_change = 0.4*2.14*room1_concentration.loc[label]/room_2_volume
+                self.assertIn(label, calculator.indoor_var_list)
+                self.assertEqual(value, expected_change)
+
+        with self.subTest("flow from room 2 to room 1"):
+            exchange_flux = Fluxes(0, 0.4)
+
+            room_1_concentration_change, room_2_concentration_change = calculator.concentration_changes(
+                exchange_flux,
+                delta_time,
+                room1_concentration,
+                room2_concentration,
+                room_1_volume,
+                room_2_volume)
+
+            for label, value in room_1_concentration_change.items():
+                # everything is departing from room 2, hence dependence on room1_concentration
+                expected_change = 0.4*2.14*room2_concentration.loc[label]/room_1_volume
+                self.assertIn(label, calculator.indoor_var_list)
+                self.assertEqual(value, expected_change)
+
+            for label, value in room_2_concentration_change.items():
+                # everything is moving from room 2, hence dependence on room1_concentration
+                expected_change = -0.4*2.14*room2_concentration.loc[label]/room_2_volume
+                self.assertIn(label, calculator.indoor_var_list)
+                self.assertEqual(value, expected_change)
+
+    def test_advection_transfer_between_rooms_with_concentration_difference(self):
+        calculator = ApertureFlowCalculator(self.dataframe.columns)
+
+        room_1_volume = 100
+        room_2_volume = 76
+
+        room1_concentration = self.dataframe.iloc[-1, :]
+        room2_concentration = self.dataframe.iloc[-1, :]
+
+        room2_concentration.loc["CO"] += 10
+
+        with self.subTest("flow from room 1 to room 2"):
+            exchange_flux = Fluxes(0.4, 0)
+            delta_time = 2.14
+
+            room_1_concentration_change, room_2_concentration_change = calculator.concentration_changes(
+                exchange_flux,
+                delta_time,
+                room1_concentration,
+                room2_concentration,
+                room_1_volume,
+                room_2_volume)
+
+            for label, value in room_1_concentration_change.items():
+                # everything is departing from room 1, hence dependence on room1_concentration
+                expected_change = -0.4*2.14*room1_concentration.loc[label]/room_1_volume
+                self.assertIn(label, calculator.indoor_var_list)
+                self.assertEqual(value, expected_change)
+
+            for label, value in room_2_concentration_change.items():
+                # everything is moving from room 1, hence dependence on room1_concentration
+                expected_change = 0.4*2.14*room1_concentration.loc[label]/room_2_volume
+                self.assertIn(label, calculator.indoor_var_list)
+                self.assertEqual(value, expected_change)
+
+        with self.subTest("flow from room 2 to room 1"):
+            exchange_flux = Fluxes(0, 0.4)
+
+            room_1_concentration_change, room_2_concentration_change = calculator.concentration_changes(
+                exchange_flux,
+                delta_time,
+                room1_concentration,
+                room2_concentration,
+                room_1_volume,
+                room_2_volume)
+
+            for label, value in room_1_concentration_change.items():
+                # everything is departing from room 2, hence dependence on room1_concentration
+                expected_change = 0.4*2.14*room2_concentration.loc[label]/room_1_volume
+                self.assertIn(label, calculator.indoor_var_list)
+                self.assertEqual(value, expected_change)
+
+            for label, value in room_2_concentration_change.items():
+                # everything is moving from room 2, hence dependence on room1_concentration
+                expected_change = -0.4*2.14*room2_concentration.loc[label]/room_2_volume
+                self.assertIn(label, calculator.indoor_var_list)
+                self.assertEqual(value, expected_change)
+
+    def test_advection_transfer_to_outdoor(self):
+        calculator = ApertureFlowCalculator(self.dataframe.columns)
+
+        room_1_volume = 100
+
+        room1_concentration = self.dataframe.iloc[-1, :]
+
+        exchange_flux = Fluxes(0.4, 0)
+        delta_time = 2.14
+
+        room_1_concentration_change = calculator.outdoor_concentration_changes(
+            exchange_flux,
+            delta_time,
+            room1_concentration,
+            room_1_volume)
+
+        for label, value in room_1_concentration_change.items():
+            self.assertIn(label, room1_concentration.keys())
+            expected_change = -2.14*0.4*room1_concentration.loc[label]/room_1_volume
+            self.assertEqual(value, expected_change, f"wrong concentration change for {label}")
+
+    def test_advection_transfer_from_outdoor(self):
+        calculator = ApertureFlowCalculator(self.dataframe.columns)
+
+        room_1_volume = 100
+
+        room1_concentration = self.dataframe.iloc[-1, :]
+
+        exchange_flux = Fluxes(0, 0.4)
+        delta_time = 2.14
+
+        room_1_concentration_change = calculator.outdoor_concentration_changes(
+            exchange_flux,
+            delta_time,
+            room1_concentration,
+            room_1_volume)
+
+        for label, value in room_1_concentration_change.items():
+            self.assertIn(label, room1_concentration.keys())
+            expected_change = 2.14*0.4*room1_concentration.loc[f"{label}OUT"] / \
+                room_1_volume if f"{label}OUT" in calculator.outdoor_var_list else 0
+            self.assertEqual(value, expected_change, f"wrong concentration change for {label}")
+
+    def test_exchange_transfer_to_outdoor(self):
+        calculator = ApertureFlowCalculator(self.dataframe.columns)
+
+        room_1_volume = 100
+
+        room1_concentration = self.dataframe.iloc[-1, :]
+
+        exchange_flux = Fluxes(0.2, 0.2)
+        delta_time = 2.14
+
+        room_1_concentration_change = calculator.outdoor_concentration_changes(
+            exchange_flux,
+            delta_time,
+            room1_concentration,
+            room_1_volume)
+
+        for label, value in room_1_concentration_change.items():
+
+            expected_outwards_change = -2.14*0.2*room1_concentration.loc[label]
+
+            expected_inwards_change = 2.14*0.2*room1_concentration.loc[f"{label}OUT"] \
+                if f"{label}OUT" in calculator.outdoor_var_list else 0
+
+            self.assertIn(label, room1_concentration.keys())
+            self.assertEqual(value, (expected_inwards_change+expected_outwards_change) /
+                             room_1_volume, f"wrong concentration change for {label}")
