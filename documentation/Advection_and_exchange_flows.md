@@ -49,7 +49,7 @@ The magnitude is not yet correctly defined, inst
 + Category 3  = 333.0
 + Category 4  = 444.0
 
-These placeholder values will need to be changed soom
+These placeholder values will need to be changed soon.
 
 ## Aperture types 
 
