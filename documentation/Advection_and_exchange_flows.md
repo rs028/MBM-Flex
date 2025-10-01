@@ -10,7 +10,7 @@ If we know the transport paths, know the wind speed and direction at a time, and
 
 This speed is assumed to flow through all the apertures along transport path.
 
-If an aperture is involved in multiple transport paths, then their contributions are summed {Review this?}
+If an aperture is involved in multiple transport paths, then their contributions are summed.<!-- Review this? -->
 
 
 ## Advection Flows
