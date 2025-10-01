@@ -57,4 +57,4 @@ These placeholder values will need to be changed soon.
 
 ## Trans matrix
 
-These flows contribute to the trans matrix, which is in turn used to determine how concentrations of species change in response to the flow of particles between rooms 
+These flows contribute to the trans matrix, which is in turn used to determine how concentrations of species change in response to the flow of particles between rooms.
