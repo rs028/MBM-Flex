@@ -42,7 +42,7 @@ Any open aperture without an advection flow is assumed to have some exchange flo
 ### Flow magnitude
 
 The exchange flow goes in both directions equally.
-The magnitude is not yet correctly defined, inst
+The magnitude is not yet correctly defined.
 
 + Category 1  = 111.0
 + Category 2  = 222.0
