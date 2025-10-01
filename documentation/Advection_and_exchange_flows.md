@@ -26,7 +26,7 @@ The magnitude of the flow is then calculated using
 + The area of the aperture
 + Discharge coefficient of the aperture, this depends on how far along the transport path the aperture is
 + Pressure coefficients of the building
-+ density of the air
++ Density of the air
 
 ## Exchange Flows
 
