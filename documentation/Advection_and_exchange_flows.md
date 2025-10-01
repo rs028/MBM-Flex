@@ -21,6 +21,7 @@ In the case where we have flow through an aperture, that aperture is said to hav
 
 The advection flow goes from the upstream room to the downstream room only, leading to asymmetric motion of particles between the rooms.
 The magnitude of the flow is then calculated using
+
 + The component of the wind through the aperture
 + The area of the aperture
 + Discharge coefficient of the aperture, this depends on how far along the transport path the aperture is
