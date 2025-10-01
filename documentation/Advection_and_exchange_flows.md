@@ -34,10 +34,10 @@ Any open aperture without an advection flow is assumed to have some exchange flo
 
 ### Catagories
 
-+ Rooms invoved in any advection flow are said to be  **Cross ventilated**. Apertures which border a cross ventilated room, if they themselves are not involved in the flow, are called **Category 1**.
-+ Apertures which join a room to the outside are labeled **Category 2**
-+ Apertures which border rooms with apertures to the outside are labeled **Category 3** (costal rooms?)
-+ Apertures which border 2 rooms with no outside aperture (landlocked rooms) and labeled **Category 4**
++ Rooms invoved in any advection flow are said to be  **Cross ventilated**. Apertures that border a cross ventilated room, if they themselves are not involved in the flow, are called **Category 1**.
++ Apertures that join a room to the outside are labeled **Category 2**
++ Apertures that border rooms with apertures to the outside are labeled **Category 3** (costal rooms?)
++ Apertures that border 2 rooms with no outside aperture (landlocked rooms) and labeled **Category 4**
 
 ### Flow magnitude
 
