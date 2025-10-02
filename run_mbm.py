@@ -62,23 +62,20 @@ if __name__ == '__main__':
     apertures = build_apertures_from_double_definition("config_rooms/mr_tcon_building.csv", rooms_dictionary)
 
     # Populate the definition of the wind
-    wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv",
-                                            building_direction=180,
-                                            in_radians=False)
+    wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv", in_radians=False)
 
     # We dont need the keys of the rooms anymore now we have populated them
-    rooms = rooms_dictionary.values()
+    rooms = list(rooms_dictionary.values())
 
-    # Define some windows
-    windows = []
 
     # Build the simulation class
     # This step will build jacobians for each of the rooms in preparation for running later
     simulation = Simulation(
         global_settings=global_settings,
         rooms=rooms,
-        windows=windows,
-        processes=6)
+        apertures=apertures,
+        wind_definition=wind_definition,
+        processes=5)
 
     # Select an initial conditions text file for each room
     # This lines uses the same file for all the rooms, but this could be different for the different rooms

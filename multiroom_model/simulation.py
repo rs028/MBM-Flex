@@ -130,6 +130,7 @@ class Simulation:
 
     @staticmethod
     def apply_aperture_results(room_results, aperture_results, delta_time):
+        result = [result.iloc[[-1], :].astype(float) for result in room_results]
         for flux, room1_index, room2_index, room_1_volume, room_2_volume in aperture_results:
             calculator = ApertureFlowCalculator(room_results[room1_index].columns)
             is_outdoor_aperture = type(room2_index) == Side
@@ -141,7 +142,8 @@ class Simulation:
                     delta_time,
                     room1_concentration,
                     room_1_volume)
-                room_results[room1_index].iloc[-1, :].add(room_1_concentration_change, fill_value=0.0)
+                new_room_1_value = result[room1_index].iloc[-1, :].add(room_1_concentration_change, fill_value=0.0)
+                result[room1_index].loc[result[room1_index].index[-1], :] = new_room_1_value
             else:
                 room1_concentration = room_results[room1_index].iloc[-1, :]
                 room2_concentration = room_results[room2_index].iloc[-1, :]
@@ -152,9 +154,11 @@ class Simulation:
                     room2_concentration,
                     room_1_volume,
                     room_2_volume)
-                room_results[room1_index].iloc[-1, :].add(room_1_concentration_change, fill_value=0.0)
-                room_results[room2_index].iloc[-1, :].add(room_2_concentration_change, fill_value=0.0)
-        return room_results
+                new_room_1_value = result[room1_index].iloc[-1, :].add(room_1_concentration_change, fill_value=0.0)
+                result[room1_index].loc[result[room1_index].index[-1], :] = new_room_1_value
+                new_room_2_value = result[room2_index].iloc[-1, :].add(room_2_concentration_change, fill_value=0.0)
+                result[room2_index].loc[result[room2_index].index[-1], :] = new_room_2_value
+        return result
 
     @staticmethod
     def build_room_evolver_starmap(room, global_settings):
