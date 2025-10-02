@@ -117,13 +117,13 @@ def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_de
 def flow_exchange(category: int):
     # TODO: this needs some calculation or something
     if category == 1:
-        return 111
+        return 0
     elif category == 2:
-        return 222
+        return 0
     elif category == 3:
-        return 333
+        return 0
     elif category == 4:
-        return 444
+        return 0
     else:
         raise Exception("unknown category")
 
@@ -218,7 +218,6 @@ class ApertureCalculation:
         """
         the advection flow resulting from given wind conditions
         """
-        # TODO: is it right that we just sum these contributions
         sum = 0
         for contribution in self.contributions:
             path_windspeed = transport_path_windspeed(contribution.path,
