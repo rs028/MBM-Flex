@@ -10,7 +10,7 @@ If we know the transport paths, know the wind speed and direction at a time, and
 
 This speed is assumed to flow through all the apertures along transport path.
 
-If an aperture is involved in multiple transport paths, then their contributions are summed.<!-- Review this? -->
+If an aperture is involved in multiple transport paths, then their contributions are summed.
 
 
 ## Advection Flows
@@ -44,12 +44,12 @@ Any open aperture without an advection flow is assumed to have some exchange flo
 The exchange flow goes in both directions equally.
 The magnitude is not yet correctly defined.
 
-+ Category 1  = 111.0
-+ Category 2  = 222.0
-+ Category 3  = 333.0
-+ Category 4  = 444.0
++ Category 1  = 0.0
++ Category 2  = 0.0
++ Category 3  = 0.0
++ Category 4  = 0.0
 
-These placeholder values will need to be changed soon.
+These placeholder values will need to be changed to better reflect exchange flows.
 
 ## Aperture types 
 
