@@ -68,7 +68,7 @@ class Simulation:
             # This means the currently solved time goes up
             solved_time: float = min(r.index[-1] for r in room_results)
 
-            # Cumulate the results for this step and others into a cumulative results dictionay
+            # Cumulate the results for this step and others into a cumulative results dictionary
             cumulative_room_results: Dict[RoomChemistry, pd.DataFrame] = dict(
                 [(r, room_results[i].copy()) for i, r in enumerate(self._rooms)])
 

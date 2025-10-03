@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     rooms_dictionary = build_rooms("config_rooms/mr_tcon_room_params.csv")
 
-    # Populate each of the rooms with additional information from suplementary csv files
+    # Populate each of the rooms with additional information from supplementary csv files
 
     for i, room in rooms_dictionary.items():
         populate_room_with_emissions_file(room, f"config_rooms/mr_room_emis_params_{i}.csv")
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
 
     # Build the simulation class
-    # This step will build jacobians for each of the rooms in preparation for running later
+    # This step will build jacobeans for each of the rooms in preparation for running later
     simulation = Simulation(
         global_settings=global_settings,
         rooms=rooms,
