@@ -1,8 +1,7 @@
 from typing import List, Tuple, Dict, Any
 import math
-import re
 
-from multiroom_model.aperture_flow_calculations import ApertureFlowCalculator
+from .aperture_flow_calculations import ApertureFlowCalculator
 from .room_chemistry import RoomChemistry
 from .aperture import Aperture, Side
 from .room_inchempy_evolver import RoomInchemPyEvolver
@@ -62,65 +61,34 @@ class Simulation:
 
             # First step
             # using the init_conditions, perform a solve on each room (performed in parallel)
-            args = [(self._room_evolvers[i], t0, t_interval, init_conditions[r]) for i, r in enumerate(self._rooms)]
-            room_results: List[pd.DataFrame] = pool.starmap(self.run_room_evolver_starmap_txt, args)
-
-            # This means the currently solved time goes up
-            solved_time: float = min(r.index[-1] for r in room_results)
+            room_results, solved_time = self._evolve_rooms(pool, t0, t_interval, init_conditions, True)
 
             # Cumulate the results for this step and others into a cumulative results dictionary
             cumulative_room_results: Dict[RoomChemistry, pd.DataFrame] = dict(
                 [(r, room_results[i].copy()) for i, r in enumerate(self._rooms)])
 
+            # Use the aperture results to adjust the room results into the input for the next iteration
+            initial_condition = self._apply_wind(pool, solved_time, t_interval, room_results)
+
             # Loop of incrementing time by t_interval and performing the operations
             # Stop when another increment would take it over the total
             while (solved_time+t_interval <= t_total):
 
-                # For each aperture  calculate a aperture result  (performed in parallel)
-                wind_speed = self._wind_definition.wind_speed.value_at_time(solved_time)
-                wind_direction = self._wind_definition.wind_direction.value_at_time(solved_time)
-                wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
-                    wind_direction)
-                args = [(w, wind_speed, wind_direction_in_radians, t_interval, room_results, solved_time)
-                        for i, w in enumerate(self._aperture_calculators)]
-                aperture_results = pool.starmap(self.run_aperture_calculation_starmap, args)
-
-                # Use the aperture results in adjust the room results into the input for the next iteration
-                initial_condition = self.apply_aperture_results(room_results, aperture_results, solved_time)
-
-                # Use these new initial conditions and solve for the next time interval  (performed in parallel)
-                args = [(r, solved_time, t_interval, initial_condition[i]) for i, r in enumerate(self._room_evolvers)]
-                room_results = pool.starmap(self.run_room_evolver_starmap, args)
-
+                # Use the initial conditions and solve for the next time interval  (performed in parallel)
+                room_results, solved_time = self._evolve_rooms(pool, solved_time, t_interval, initial_condition)
                 # Add the new results to the cumulative result for all times
                 cumulative_room_results = dict(
                     [(r, pd.concat([cumulative_room_results[r], room_results[i]], axis=0)) for i, r in enumerate(self._rooms)])
 
-                # Increase the solved time to reflect what results we have now calculated
-                solved_time = min(r.index[-1] for r in room_results)
+                # Use the aperture results in adjust the room results into appropriate initial conditions for the next iteration
+                initial_condition = self._apply_wind(pool, solved_time, t_interval, room_results)
 
             # Final step  if there is any time smaller than a single interval left to be solved
             if solved_time < t_total:
 
-                # For each aperture calculate a aperture result  (performed in parallel)
-                wind_speed = self._wind_definition.wind_speed.value_at_time(solved_time)
-                wind_direction = self._wind_definition.wind_direction.value_at_time(solved_time)
-                wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
-                    wind_direction)
-                args = [(w, wind_speed, wind_direction_in_radians, t_interval, room_results, solved_time)
-                        for i, w in enumerate(self._aperture_calculators)]
-                aperture_results = pool.starmap(self.run_aperture_calculation_starmap, args)
+                final_t_interval = t_total-solved_time
 
-                # Use the aperture results in adjust the room results into the input for the next iteration
-                initial_condition = self.apply_aperture_results(room_results, aperture_results, solved_time)
-
-                # Use these new initial conditions and solve for the next time interval  (performed in parallel)
-                args = [(r, solved_time, t_total-solved_time, initial_condition[i])
-                        for i, r in enumerate(self._room_evolvers)]
-                room_results = pool.starmap(self.run_room_evolver_starmap, args)
-
-                # This should now have solved for times right up to time_total
-                solved_time = min(r.index[-1] for r in room_results)
+                room_results, solved_time = self._evolve_rooms(pool, solved_time, final_t_interval, initial_condition)
 
                 # Add the new results to the cumulative result for all times
                 cumulative_room_results = dict(
@@ -128,19 +96,57 @@ class Simulation:
 
         return cumulative_room_results
 
+    def _apply_wind(self, pool, t0, t_interval, room_results):
+        # Determine the properties of the wind at this time
+        wind_speed = self._wind_definition.wind_speed.value_at_time(t0)
+        wind_direction = self._wind_definition.wind_direction.value_at_time(t0)
+        wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
+            wind_direction)
+        # For each aperture  calculate a aperture result  (performed in parallel)
+        args = [(w, wind_speed, wind_direction_in_radians, t_interval, room_results, t0)
+                for w in self._aperture_calculators]
+        aperture_results = pool.starmap(self.run_aperture_calculation_starmap, args)
+        # Use the aperture results to adjust the room results into the input for the next iteration
+        return self.apply_aperture_results(room_results, aperture_results, t0)
+
+    def _evolve_rooms(self, pool, t0, t_interval, initial_condition, txt_file=False):
+        # Use the initial conditions (text or dataframe) to produce new room results using the room evolvers
+        if (txt_file):
+            args = [(self._room_evolvers[i], t0, t_interval, initial_condition[r]) for i, r in enumerate(self._rooms)]
+            room_results = pool.starmap(self.run_room_evolver_starmap_txt, args)
+        else:
+            args = [(r, t0, t_interval, initial_condition[i]) for i, r in enumerate(self._room_evolvers)]
+            room_results = pool.starmap(self.run_room_evolver_starmap, args)
+        # This results in a new time which we have solved to
+        solved_time = min(r.index[-1] for r in room_results)
+        return room_results, solved_time
+
+    def _trans_matrix(self, time: float):
+        import numpy as np
+        wind_speed = self._wind_definition.wind_speed.value_at_time(time)
+        wind_direction = self._wind_definition.wind_direction.value_at_time(time)
+        wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
+            wind_direction)
+        size = len(self._rooms)+1
+        result = np.zeros((size, size))
+        for c in self._aperture_calculators:
+            aperture_calculator, room1_index, room2_index, _, _ = c
+            is_outdoor_aperture = type(room2_index) == Side
+            i = room1_index+1
+            j = 0 if is_outdoor_aperture else room2_index+1
+            f = aperture_calculator.trans_matrix_contributions(wind_speed, wind_direction_in_radians)
+            result[i, j] += f.from_1_to_2
+            result[j, i] += f.from_2_to_1
+        return result
+
     @staticmethod
     def apply_aperture_results(room_results, aperture_results, solved_time):
         result = [result.loc[[solved_time], :].astype(float) for result in room_results]
         for room_1_concentration_change, room_2_concentration_change, room1_index, room2_index in aperture_results:
-            is_outdoor_aperture = type(room2_index) == Side
-            if (is_outdoor_aperture):
-                new_room_1_value = result[room1_index].loc[solved_time, :].add(
-                    room_1_concentration_change, fill_value=0.0)
-                result[room1_index].loc[solved_time, :] = new_room_1_value
-            else:
-                new_room_1_value = result[room1_index].loc[solved_time, :].add(
-                    room_1_concentration_change, fill_value=0.0)
-                result[room1_index].loc[solved_time, :] = new_room_1_value
+            new_room_1_value = result[room1_index].loc[solved_time, :].add(
+                room_1_concentration_change, fill_value=0.0)
+            result[room1_index].loc[solved_time, :] = new_room_1_value
+            if (room_2_concentration_change is not None):
                 new_room_2_value = result[room2_index].loc[solved_time, :].add(
                     room_2_concentration_change, fill_value=0.0)
                 result[room2_index].loc[solved_time, :] = new_room_2_value
