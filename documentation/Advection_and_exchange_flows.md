@@ -1,4 +1,4 @@
-# Avection and Exchange flows
+# Advection and Exchange flows
 
 We depict the scheme used to determine the flow type here 
 ![alt text](advection_and_exchange_flows.png)
@@ -32,9 +32,9 @@ The magnitude of the flow is then calculated using
 
 Any open aperture without an advection flow is assumed to have some exchange flow.
 
-### Catagories
+### Categories
 
-+ Rooms invoved in any advection flow are said to be  **Cross ventilated**. Apertures that border a cross ventilated room, if they themselves are not involved in the flow, are called **Category 1**.
++ Rooms involved in any advection flow are said to be  **Cross ventilated**. Apertures that border a cross ventilated room, if they themselves are not involved in the flow, are called **Category 1**.
 + Apertures that join a room to the outside are labeled **Category 2**
 + Apertures that border rooms with apertures to the outside are labeled **Category 3** (costal rooms?)
 + Apertures that border 2 rooms with no outside aperture (landlocked rooms) and labeled **Category 4**
