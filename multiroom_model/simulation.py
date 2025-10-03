@@ -81,12 +81,12 @@ class Simulation:
                 wind_direction = self._wind_definition.wind_direction.value_at_time(solved_time)
                 wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
                     wind_direction)
-                args = [(w, wind_speed, wind_direction_in_radians, room_results)
+                args = [(w, wind_speed, wind_direction_in_radians, t_interval, room_results, solved_time)
                         for i, w in enumerate(self._aperture_calculators)]
                 aperture_results = pool.starmap(self.run_aperture_calculation_starmap, args)
 
                 # Use the aperture results in adjust the room results into the input for the next iteration
-                initial_condition = self.apply_aperture_results(room_results, aperture_results, t_interval)
+                initial_condition = self.apply_aperture_results(room_results, aperture_results, solved_time)
 
                 # Use these new initial conditions and solve for the next time interval  (performed in parallel)
                 args = [(r, solved_time, t_interval, initial_condition[i]) for i, r in enumerate(self._room_evolvers)]
@@ -107,12 +107,12 @@ class Simulation:
                 wind_direction = self._wind_definition.wind_direction.value_at_time(solved_time)
                 wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
                     wind_direction)
-                args = [(w, wind_speed, wind_direction_in_radians, room_results)
+                args = [(w, wind_speed, wind_direction_in_radians, t_interval, room_results, solved_time)
                         for i, w in enumerate(self._aperture_calculators)]
                 aperture_results = pool.starmap(self.run_aperture_calculation_starmap, args)
 
                 # Use the aperture results in adjust the room results into the input for the next iteration
-                initial_condition = self.apply_aperture_results(room_results, aperture_results, t_interval)
+                initial_condition = self.apply_aperture_results(room_results, aperture_results, solved_time)
 
                 # Use these new initial conditions and solve for the next time interval  (performed in parallel)
                 args = [(r, solved_time, t_total-solved_time, initial_condition[i])
@@ -129,35 +129,21 @@ class Simulation:
         return cumulative_room_results
 
     @staticmethod
-    def apply_aperture_results(room_results, aperture_results, delta_time):
-        result = [result.iloc[[-1], :].astype(float) for result in room_results]
-        for flux, room1_index, room2_index, room_1_volume, room_2_volume in aperture_results:
-            calculator = ApertureFlowCalculator(room_results[room1_index].columns)
+    def apply_aperture_results(room_results, aperture_results, solved_time):
+        result = [result.loc[[solved_time], :].astype(float) for result in room_results]
+        for room_1_concentration_change, room_2_concentration_change, room1_index, room2_index in aperture_results:
             is_outdoor_aperture = type(room2_index) == Side
             if (is_outdoor_aperture):
-
-                room1_concentration = room_results[room1_index].iloc[-1, :]
-                room_1_concentration_change = calculator.outdoor_concentration_changes(
-                    flux,
-                    delta_time,
-                    room1_concentration,
-                    room_1_volume)
-                new_room_1_value = result[room1_index].iloc[-1, :].add(room_1_concentration_change, fill_value=0.0)
-                result[room1_index].loc[result[room1_index].index[-1], :] = new_room_1_value
+                new_room_1_value = result[room1_index].loc[solved_time, :].add(
+                    room_1_concentration_change, fill_value=0.0)
+                result[room1_index].loc[solved_time, :] = new_room_1_value
             else:
-                room1_concentration = room_results[room1_index].iloc[-1, :]
-                room2_concentration = room_results[room2_index].iloc[-1, :]
-                room_1_concentration_change, room_2_concentration_change = calculator.concentration_changes(
-                    flux,
-                    delta_time,
-                    room1_concentration,
-                    room2_concentration,
-                    room_1_volume,
-                    room_2_volume)
-                new_room_1_value = result[room1_index].iloc[-1, :].add(room_1_concentration_change, fill_value=0.0)
-                result[room1_index].loc[result[room1_index].index[-1], :] = new_room_1_value
-                new_room_2_value = result[room2_index].iloc[-1, :].add(room_2_concentration_change, fill_value=0.0)
-                result[room2_index].loc[result[room2_index].index[-1], :] = new_room_2_value
+                new_room_1_value = result[room1_index].loc[solved_time, :].add(
+                    room_1_concentration_change, fill_value=0.0)
+                result[room1_index].loc[solved_time, :] = new_room_1_value
+                new_room_2_value = result[room2_index].loc[solved_time, :].add(
+                    room_2_concentration_change, fill_value=0.0)
+                result[room2_index].loc[solved_time, :] = new_room_2_value
         return result
 
     @staticmethod
@@ -189,7 +175,27 @@ class Simulation:
                                     global_settings.downwind_pressure_coefficient)), room_1_index, room_2_index, room_1_volume, room_2_volume
 
     @staticmethod
-    def run_aperture_calculation_starmap(aperture_calculator_data, wind_speed, wind_direction, room_results):
+    def run_aperture_calculation_starmap(aperture_calculator_data, wind_speed, wind_direction, delta_time, room_results, solved_time):
         aperture_calculator, room1_index, room2_index, room_1_volume, room_2_volume = aperture_calculator_data
         flux = aperture_calculator.trans_matrix_contributions(wind_speed, wind_direction)
-        return flux, room1_index, room2_index, room_1_volume, room_2_volume
+        calculator = ApertureFlowCalculator(room_results[room1_index].columns)
+        is_outdoor_aperture = type(room2_index) == Side
+        if (is_outdoor_aperture):
+            room1_concentration = room_results[room1_index].loc[solved_time, :]
+            room_1_concentration_change = calculator.outdoor_concentration_changes(
+                flux,
+                delta_time,
+                room1_concentration,
+                room_1_volume)
+            return room_1_concentration_change, None, room1_index, room2_index
+        else:
+            room1_concentration = room_results[room1_index].loc[solved_time, :]
+            room2_concentration = room_results[room2_index].loc[solved_time, :]
+            room_1_concentration_change, room_2_concentration_change = calculator.concentration_changes(
+                flux,
+                delta_time,
+                room1_concentration,
+                room2_concentration,
+                room_1_volume,
+                room_2_volume)
+            return room_1_concentration_change, room_2_concentration_change, room1_index, room2_index
