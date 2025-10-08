@@ -56,6 +56,14 @@ class Simulation:
                 self.build_aperture_calculator_starmap, args)
 
     def run(self, init_conditions: dict, t0: float, t_total: float, t_interval: float):
+        """
+        @brief run the simulation over a time interval.
+
+        @param init_conditions: The starting state of the rooms, as a dictionary of text files.
+        @param t0: The time to start the simulation at.
+        @param t_total: Duration to simulate.
+        @param t_interval: How often to apply the effect of windows.
+        """
 
         with Pool(self._processes) as pool:
 
@@ -97,6 +105,12 @@ class Simulation:
         return cumulative_room_results
 
     def _apply_wind(self, pool, t0, t_interval, room_results):
+        """
+        Applies the effect of the wind, to alter the state of the rooms
+        Uses the pool to calculate the impact of each aperture on the room concentrations
+        Applies these changes to the concentrations
+        Return the new room concentrations
+        """
         # Determine the properties of the wind at this time
         wind_speed = self._wind_definition.wind_speed.value_at_time(t0)
         wind_direction = self._wind_definition.wind_direction.value_at_time(t0)
@@ -110,6 +124,11 @@ class Simulation:
         return self.apply_aperture_results(room_results, aperture_results, t0)
 
     def _evolve_rooms(self, pool, t0, t_interval, initial_condition, txt_file=False):
+        """
+        Evolves each of the rooms independently for one interval of time
+        Uses the pool to calculate the new concentration in each room
+        Return the new room concentrations, and the time at which these are true
+        """
         # Use the initial conditions (text or dataframe) to produce new room results using the room evolvers
         if (txt_file):
             args = [(self._room_evolvers[i], t0, t_interval, initial_condition[r]) for i, r in enumerate(self._rooms)]
@@ -121,80 +140,135 @@ class Simulation:
         solved_time = min(r.index[-1] for r in room_results)
         return room_results, solved_time
 
-    def _trans_matrix(self, time: float):
+    def trans_matrix(self, time: float):
+        """
+        @brief calculate the whole trans matrix at a given time.
+
+        @param time: The time to calculate at.
+        """
         import numpy as np
         wind_speed = self._wind_definition.wind_speed.value_at_time(time)
         wind_direction = self._wind_definition.wind_direction.value_at_time(time)
         wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
             wind_direction)
         size = len(self._rooms)+1
+        
+        # Make a result numpy matrix
         result = np.zeros((size, size))
+
+        # For each aperture calculate the flux and add it to the resultant matrix
         for c in self._aperture_calculators:
             aperture_calculator, room1_index, room2_index, _, _ = c
-            is_outdoor_aperture = type(room2_index) == Side
+            is_outdoor_aperture = room2_index is None
             i = room1_index+1
             j = 0 if is_outdoor_aperture else room2_index+1
             f = aperture_calculator.trans_matrix_contributions(wind_speed, wind_direction_in_radians)
             result[i, j] += f.from_1_to_2
             result[j, i] += f.from_2_to_1
+
         return result
 
     @staticmethod
     def apply_aperture_results(room_results, aperture_results, solved_time):
+        """
+        Applies the effect of the aperture results, to alter the state of the rooms
+        Return the new room concentrations at the final time
+        """
+        # Make a new result from the current result the the solved time
         result = [result.loc[[solved_time], :].astype(float) for result in room_results]
+        # Go through all the aperture results
         for room_1_concentration_change, room_2_concentration_change, room1_index, room2_index in aperture_results:
+            # Adjust the concentrations of room_1 int the new results
             new_room_1_value = result[room1_index].loc[solved_time, :].add(
                 room_1_concentration_change, fill_value=0.0)
             result[room1_index].loc[solved_time, :] = new_room_1_value
-            if (room_2_concentration_change is not None):
+            # If there is a room 2, adjust the concentrations of room_2 int the new results
+            if (room2_index is not None):
                 new_room_2_value = result[room2_index].loc[solved_time, :].add(
                     room_2_concentration_change, fill_value=0.0)
                 result[room2_index].loc[solved_time, :] = new_room_2_value
+        # return the augmented results
         return result
 
     @staticmethod
     def build_room_evolver_starmap(room, global_settings):
+        """
+        Create one room evolver
+        """
         return RoomInchemPyEvolver(room, global_settings)
 
     @staticmethod
     def run_room_evolver_starmap_txt(evolver, t0, t_interval, initial_text_file):
+        """
+        Use the room evolver to calculate new room concentrations
+        Start with an initial text file of concentrations
+        """
         df, _ = evolver.run(t0=t0, seconds_to_integrate=t_interval, initial_text_file=initial_text_file)
         return df
 
     @staticmethod
     def run_room_evolver_starmap(evolver, t0, t_interval, initial_dataframe):
+        """
+        Use the room evolver to calculate new room concentrations
+        Start with an initial dataframe of concentrations
+        """
         df, _ = evolver.run(t0=t0, seconds_to_integrate=t_interval, initial_dataframe=initial_dataframe)
         return df
 
     @staticmethod
     def build_aperture_calculator_starmap(aperture, transport_paths, apertures, rooms, global_settings):
+        """
+        Create one ApertureCalculation and the accompanying data to use it 
+        """
         room_1_index = rooms.index(aperture.room1)
-        room_2_index = aperture.room2 if type(aperture.room2) == Side else rooms.index(aperture.room2)
+        room_2_index = None if type(aperture.room2) == Side else rooms.index(aperture.room2)
         room_1_volume = aperture.room1.volume_in_m3
-        room_2_volume = 0 if type(aperture.room2) == Side else aperture.room2.volume_in_m3
-        return ApertureCalculation(aperture,
-                                   transport_paths,
-                                   apertures,
-                                   global_settings.building_direction_in_radians,
-                                   global_settings.air_density,
-                                   (global_settings.upwind_pressure_coefficient,
-                                    global_settings.downwind_pressure_coefficient)), room_1_index, room_2_index, room_1_volume, room_2_volume
+        room_2_volume = None if type(aperture.room2) == Side else aperture.room2.volume_in_m3
+        calculator = ApertureCalculation(aperture,
+                                         transport_paths,
+                                         apertures,
+                                         global_settings.building_direction_in_radians,
+                                         global_settings.air_density,
+                                         (global_settings.upwind_pressure_coefficient,
+                                          global_settings.downwind_pressure_coefficient))
+        return calculator, room_1_index, room_2_index, room_1_volume, room_2_volume
 
     @staticmethod
-    def run_aperture_calculation_starmap(aperture_calculator_data, wind_speed, wind_direction, delta_time, room_results, solved_time):
+    def run_aperture_calculation_starmap(aperture_calculator_data,
+                                         wind_speed, wind_direction,
+                                         delta_time,
+                                         room_results,
+                                         solved_time):
+        """
+        Use the aperture calculation to:
+        - calculate a flux based on the current wind
+        - use an ApertureFlowCalculator to calculate the concentration changes
+        - return the concentration changes, and the room indices they need to be applied to
+
+        This does not apply the concentration changes, the changes can't be done in parallel
+        """
         aperture_calculator, room1_index, room2_index, room_1_volume, room_2_volume = aperture_calculator_data
+
+        # Calculate the flux relating to this aperture
         flux = aperture_calculator.trans_matrix_contributions(wind_speed, wind_direction)
+
+        # build a flow calculator
         calculator = ApertureFlowCalculator(room_results[room1_index].columns)
-        is_outdoor_aperture = type(room2_index) == Side
+
+        # switch depending on whether the aperture goes outside
+        is_outdoor_aperture = (room2_index is None)
         if (is_outdoor_aperture):
+            # For an outside aperture, only one concentration is used as an input
             room1_concentration = room_results[room1_index].loc[solved_time, :]
             room_1_concentration_change = calculator.outdoor_concentration_changes(
                 flux,
                 delta_time,
                 room1_concentration,
                 room_1_volume)
-            return room_1_concentration_change, None, room1_index, room2_index
+            # For an outside aperture, only one concentration change is calculated
+            return room_1_concentration_change, None, room1_index, None
         else:
+            # For an indoor aperture, one concentration per room is used as an input
             room1_concentration = room_results[room1_index].loc[solved_time, :]
             room2_concentration = room_results[room2_index].loc[solved_time, :]
             room_1_concentration_change, room_2_concentration_change = calculator.concentration_changes(
@@ -204,4 +278,5 @@ class Simulation:
                 room2_concentration,
                 room_1_volume,
                 room_2_volume)
+            # For an indoor aperture, one concentration change per room is calculated
             return room_1_concentration_change, room_2_concentration_change, room1_index, room2_index
