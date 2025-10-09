@@ -10,6 +10,7 @@ from .transport_paths import paths_through_building
 from .global_settings import GlobalSettings
 from .wind_definition import WindDefinition
 import pandas as pd
+import numpy as np
 from multiprocess import Pool
 
 
@@ -146,7 +147,6 @@ class Simulation:
 
         @param time: The time to calculate at.
         """
-        import numpy as np
         wind_speed = self._wind_definition.wind_speed.value_at_time(time)
         wind_direction = self._wind_definition.wind_direction.value_at_time(time)
         wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
