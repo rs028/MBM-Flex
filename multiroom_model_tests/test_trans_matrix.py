@@ -66,7 +66,6 @@ class TestTransMatrix(unittest.TestCase):
                                self.global_settings.downwind_pressure_coefficient),
                               self.global_settings.air_density)
 
-    
     def test_trans_matrix(self):
 
         simulation = Simulation(self.global_settings, self.rooms, self.apertures, self.wind_definition)
@@ -78,7 +77,7 @@ class TestTransMatrix(unittest.TestCase):
             print(len(np.transpose(matrix.nonzero())))
             print(len(self.apertures))
 
-            self.assertEqual(matrix.shape, (10,10))
+            self.assertEqual(matrix.shape, (10, 10))
 
             self.assertFalse(np.isnan(matrix.max()))
             self.assertFalse(np.isnan(matrix.min()))
@@ -100,7 +99,7 @@ class TestTransMatrix(unittest.TestCase):
         matrix = simulation.trans_matrix(0)
 
         print(matrix)
-        self.assertEqual(matrix.shape, (2,2))
+        self.assertEqual(matrix.shape, (2, 2))
 
         self.assertEqual(matrix[0, 0], 0)
         self.assertEqual(matrix[1, 1], 0)

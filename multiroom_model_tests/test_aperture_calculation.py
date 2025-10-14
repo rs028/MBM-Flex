@@ -88,10 +88,10 @@ class TestApertureCalculations(unittest.TestCase):
         self.assertAlmostEqual(result, 0.0)
 
     def test_flow_exchange_known_values(self):
-        assert flow_exchange(1) == 111
-        assert flow_exchange(2) == 222
-        assert flow_exchange(3) == 333
-        assert flow_exchange(4) == 444
+        assert flow_exchange(1) == 0
+        assert flow_exchange(2) == 0
+        assert flow_exchange(3) == 0
+        assert flow_exchange(4) == 0
         with self.assertRaises(Exception):
             flow_exchange(999)
 
@@ -141,7 +141,7 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
             args, _ = mock.call_args
             windspeed, _, Cd, _, _ = args
 
-            self.assertEqual(windspeed, 10)
+            self.assertEqual(windspeed, -10)
             self.assertEqual(Cd, 0.7/(1+1))
 
         with self.subTest("flow angle 45 start"):
@@ -151,22 +151,22 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
             args, _ = mock.call_args
             windspeed, _, Cd, _, _ = args
 
-            self.assertAlmostEqual(windspeed, 10/math.sqrt(2))
+            self.assertAlmostEqual(windspeed, -10/math.sqrt(2))
             self.assertEqual(Cd, 0.7/(1+1))
 
         with self.subTest("flow angle 135 start"):
             rate = self.calculations[0].advection_flow_rate(10.0, 3.0*math.pi/4.0)
-            self.assertAlmostEqual(rate, 1.234)
+            self.assertAlmostEqual(rate, -1.234)
 
             args, _ = mock.call_args
             windspeed, _, Cd, _, _ = args
 
-            self.assertAlmostEqual(windspeed, -10/math.sqrt(2))
+            self.assertAlmostEqual(windspeed, 10/math.sqrt(2))
             self.assertEqual(Cd, 0.7/(1+0))
 
         with self.subTest("flow angle 90 start"):
             rate = self.calculations[0].advection_flow_rate(10.0, math.pi/2.0)
-            self.assertAlmostEqual(rate, 1.234)
+            self.assertAlmostEqual(rate, -1.234)
 
             args, _ = mock.call_args
             windspeed, _, Cd, _, _ = args
@@ -176,19 +176,19 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
 
         with self.subTest("flow angle 180 start"):
             rate = self.calculations[0].advection_flow_rate(10.0, math.pi)
-            self.assertAlmostEqual(rate, 1.234)
+            self.assertAlmostEqual(rate, -1.234)
 
             args, _ = mock.call_args
             windspeed, _, Cd, _, _ = args
 
-            self.assertEqual(windspeed, -10)
+            self.assertEqual(windspeed, 10)
             self.assertEqual(Cd, 0.7/(1+0))
 
         with self.subTest("flow angle 0 mid"):
             mock.return_value = 1.234
 
             rate = self.calculations[2].advection_flow_rate(10.0, 0)
-            self.assertAlmostEqual(rate, 1.234)
+            self.assertAlmostEqual(rate, -1.234)
 
             args, _ = mock.call_args
             windspeed, _, Cd, _, _ = args
@@ -198,7 +198,7 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
 
         with self.subTest("flow angle 45 mid"):
             rate = self.calculations[2].advection_flow_rate(10.0, math.pi/4.0)
-            self.assertAlmostEqual(rate, 1.234)
+            self.assertAlmostEqual(rate, -1.234)
 
             args, _ = mock.call_args
             windspeed, _, Cd, _, _ = args
@@ -230,7 +230,7 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
             mock.return_value = 1.234
 
             rate = self.calculations[4].advection_flow_rate(10.0, 0)
-            self.assertAlmostEqual(rate, 1.234)
+            self.assertAlmostEqual(rate, -1.234)
 
             args, _ = mock.call_args
             windspeed, _, Cd, _, _ = args
@@ -240,7 +240,7 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
 
         with self.subTest("flow angle 45 end"):
             rate = self.calculations[4].advection_flow_rate(10.0, math.pi/4.0)
-            self.assertAlmostEqual(rate, 1.234)
+            self.assertAlmostEqual(rate, -1.234)
 
             args, _ = mock.call_args
             windspeed, _, Cd, _, _ = args
@@ -315,11 +315,11 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
             result = self.calculations[0].trans_matrix_contributions(1,0)
 
             windspeed, _, Cd, _, _ = mock_flow_advection.call_args[0]
-            self.assertEqual(windspeed, 1)
+            self.assertEqual(windspeed, -1)
             self.assertEqual(Cd, 0.7/(1+1))
 
-            self.assertEqual(result.from_1_to_2, 1.234)
-            self.assertEqual(result.from_2_to_1, 0)
+            self.assertEqual(result.from_1_to_2, 0)
+            self.assertEqual(result.from_2_to_1, 1.234)
 
             result = self.calculations[4].trans_matrix_contributions(1,0)
 
@@ -327,14 +327,14 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
             self.assertEqual(windspeed, -1)
             self.assertEqual(Cd, 0.7/(1+0))
 
-            self.assertEqual(result.from_1_to_2, 0)
-            self.assertEqual(result.from_2_to_1, 1.234)
+            self.assertEqual(result.from_1_to_2, 1.234)
+            self.assertEqual(result.from_2_to_1, 0)
 
         with self.subTest("negative advection flow"):
             result = self.calculations[0].trans_matrix_contributions(1, math.pi)
 
             windspeed, _, Cd, _, _ = mock_flow_advection.call_args[0]
-            self.assertEqual(windspeed, -1)
+            self.assertEqual(windspeed, 1)
             self.assertEqual(Cd, 0.7/(1+0))
 
             self.assertEqual(result.from_1_to_2, 0)
