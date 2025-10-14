@@ -85,5 +85,5 @@ def build_wind_definition(csv_file: str, in_radians: bool = False) -> WindDefini
     return WindDefinition(
         wind_speed=wind_speed,
         wind_direction=wind_direction,
-        in_radians=False
+        in_radians=in_radians
     )
