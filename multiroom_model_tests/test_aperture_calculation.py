@@ -132,16 +132,17 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
 
     @patch('multiroom_model.aperture_calculations.flow_advection')
     def test_advection_flow_rate(self, mock):
-        with self.subTest("flow angle 0 start"):
-            mock.return_value = 1.234
+        mock.return_value = 1.234
 
+
+        with self.subTest("flow angle 0 start"):
             rate = self.calculations[0].advection_flow_rate(10.0, 0)
             self.assertAlmostEqual(rate, 1.234)
 
             args, _ = mock.call_args
             windspeed, _, Cd, _, _ = args
 
-            self.assertEqual(windspeed, -10)
+            self.assertAlmostEqual(windspeed, -10)
             self.assertEqual(Cd, 0.7/(1+1))
 
         with self.subTest("flow angle 45 start"):
@@ -267,6 +268,68 @@ class TestApertureCalculationsWithWind(unittest.TestCase):
 
             self.assertEqual(windspeed, 10)
             self.assertEqual(Cd, 0.7/(1+1))
+
+    @patch('multiroom_model.aperture_calculations.flow_advection')
+    def test_advection_flow_rate_2(self, mock):
+        mock.return_value = 1.234
+
+        def test(aperture_index, angle, position):
+            reversed_sign = -1 if aperture_index==0 else 1
+            calculation = self.calculations[aperture_index]
+            rate = calculation.advection_flow_rate(10.0, angle)
+
+            expected_wind = 10 * math.cos(angle-math.pi)
+
+            wind_sign = -1 if expected_wind<0 else 1
+                
+            self.assertAlmostEqual(rate, reversed_sign*wind_sign*1.234)
+
+            args, _ = mock.call_args
+            windspeed, _, Cd, _, _ = args
+
+            self.assertEqual(windspeed, expected_wind)
+            self.assertEqual(Cd, 0.7/(1+position))
+
+
+        with self.subTest("flow angle 0 start"):
+            test(0, 0.0, 1.0)
+
+        with self.subTest("flow angle 45 start"):
+            test(0, math.pi/4.0, 1.0)
+
+        with self.subTest("flow angle 135 start"):
+            test(0, 3.0*math.pi/4.0, 0.0)
+
+        with self.subTest("flow angle 90 start"):
+            test(0, math.pi/2.0, 0.0)
+
+        with self.subTest("flow angle 180 start"):
+            test(0, math.pi, 0.0)
+
+        with self.subTest("flow angle 0 mid"):
+            test(2, 0, 0.5)
+
+        with self.subTest("flow angle 45 mid"):
+            test(2, math.pi/4.0, 0.5)
+
+        with self.subTest("flow angle 90 mid"):
+            test(2, math.pi/2.0, 0.5)
+
+        with self.subTest("flow angle 180 mid"):
+            test(2, math.pi, 0.5)
+
+        with self.subTest("flow angle 0 end"):
+            test(4, 0, 0)
+
+        with self.subTest("flow angle 45 end"):
+            test(4, math.pi/4.0, 0.0)
+
+        with self.subTest("flow angle 90 end"):
+            test(4, math.pi/2.0, 1.0)
+
+        with self.subTest("flow angle 180 end"):
+            test(4, math.pi, 1.0)
+
 
     def test_exchange_category(self):
         # everything cross ventilated if the wind is in the correct direction
