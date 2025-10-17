@@ -106,7 +106,20 @@ class Simulation:
 
         return cumulative_room_results
 
-    def _apply_wind(self, pool, t0, t_interval, room_results):
+    def wind_state(self, time):
+        """
+        Determine the wind speed and direction (in radians)
+        """
+        if self._wind_definition is None:
+            return 0, 0
+        else:
+            wind_speed = self._wind_definition.wind_speed.value_at_time(time)
+            wind_direction = self._wind_definition.wind_direction.value_at_time(time)
+            wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
+            wind_direction)
+            return wind_speed, wind_direction_in_radians
+
+    def _apply_wind(self, pool, time, t_interval, room_results):
         """
         Applies the effect of the wind, to alter the state of the rooms
         Uses the pool to calculate the impact of each aperture on the room concentrations
@@ -114,16 +127,13 @@ class Simulation:
         Return the new room concentrations
         """
         # Determine the properties of the wind at this time
-        wind_speed = self._wind_definition.wind_speed.value_at_time(t0)
-        wind_direction = self._wind_definition.wind_direction.value_at_time(t0)
-        wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
-            wind_direction)
+        wind_speed, wind_direction_in_radians = self.wind_state(time)
         # For each aperture  calculate a aperture result  (performed in parallel)
-        args = [(w, wind_speed, wind_direction_in_radians, t_interval, room_results, t0)
+        args = [(w, wind_speed, wind_direction_in_radians, t_interval, room_results, time)
                 for w in self._aperture_calculators]
         aperture_results = pool.starmap(self.run_aperture_calculation_starmap, args)
         # Use the aperture results to adjust the room results into the input for the next iteration
-        return self.apply_aperture_results(room_results, aperture_results, t0)
+        return self.apply_aperture_results(room_results, aperture_results, time)
 
     def _evolve_rooms(self, pool, t0, t_interval, initial_condition, txt_file=False):
         """
@@ -144,10 +154,8 @@ class Simulation:
 
         @param time: The time to calculate at.
         """
-        wind_speed = self._wind_definition.wind_speed.value_at_time(time)
-        wind_direction = self._wind_definition.wind_direction.value_at_time(time)
-        wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
-            wind_direction)
+        # Determine the properties of the wind at this time
+        wind_speed, wind_direction_in_radians = self.wind_state(time)
         size = len(self._rooms)+1
 
         # Make a result numpy matrix
