@@ -50,7 +50,7 @@ class Simulation:
             args = [(r, self._global_settings) for r in self._rooms]
             self._room_evolvers: List[RoomInchemPyEvolver] = pool.starmap(self.build_room_evolver_starmap, args)
 
-            # For each aperture, build a ApertureCalculation (performed in parallel)
+            # For each aperture, build an ApertureCalculation (performed in parallel)
             transport_paths = paths_through_building(self._rooms, self._apertures)
             args = [(w, transport_paths, self._apertures, self._rooms, self._global_settings) for w in self._apertures]
             self._aperture_calculators: List[ApertureCalculation] = pool.starmap(
@@ -89,7 +89,7 @@ class Simulation:
                 cumulative_room_results = dict(
                     [(r, pd.concat([cumulative_room_results[r], room_results[i]], axis=0)) for i, r in enumerate(self._rooms)])
 
-                # Use the aperture results in adjust the room results into appropriate initial conditions for the next iteration
+                # Use the aperture results to adjust the room results into appropriate initial conditions for the next iteration
                 initial_condition = self._apply_wind(pool, solved_time, t_interval, room_results)
 
             # Final step  if there is any time smaller than a single interval left to be solved
