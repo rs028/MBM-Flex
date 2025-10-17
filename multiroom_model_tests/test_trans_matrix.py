@@ -36,7 +36,7 @@ class TestTransMatrix(unittest.TestCase):
         rho = (100*ambient_press) / (287.050 * ambient_temp)  # ambient air density (assuming dry air), in kg/m3
 
         cls.global_settings = GlobalSettings(
-            filename='chem_mech/mcm_subset.fac',
+            filename='chem_mech/escs_v1.fac',
             INCHEM_additional=False,
             particles=True,
             constrained_file=None,
