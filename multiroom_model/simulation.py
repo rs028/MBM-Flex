@@ -70,7 +70,8 @@ class Simulation:
 
             # First step
             # using the init_conditions, perform a solve on each room (performed in parallel)
-            room_results, solved_time = self._evolve_rooms(pool, t0, t_interval, init_conditions, True)
+            room_results, solved_time = self._evolve_rooms(pool, t0, t_interval,
+                                                           [init_conditions[r] for r in self._rooms], True)
 
             # Cumulate the results for this step and others into a cumulative results dictionary
             cumulative_room_results: Dict[RoomChemistry, pd.DataFrame] = dict(
@@ -131,12 +132,8 @@ class Simulation:
         Return the new room concentrations, and the time at which these are true
         """
         # Use the initial conditions (text or dataframe) to produce new room results using the room evolvers
-        if (txt_file):
-            args = [(self._room_evolvers[i], t0, t_interval, initial_condition[r]) for i, r in enumerate(self._rooms)]
-            room_results = pool.starmap(self.run_room_evolver_starmap_txt, args)
-        else:
-            args = [(r, t0, t_interval, initial_condition[i]) for i, r in enumerate(self._room_evolvers)]
-            room_results = pool.starmap(self.run_room_evolver_starmap, args)
+        args = [(self._room_evolvers[i], t0, t_interval, initial_condition[i], txt_file) for i in range(len(self._rooms))]
+        room_results = pool.starmap(self.run_room_evolver_starmap, args)
         # This results in a new time which we have solved to
         solved_time = min(r.index[-1] for r in room_results)
         return room_results, solved_time
@@ -152,7 +149,7 @@ class Simulation:
         wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
             wind_direction)
         size = len(self._rooms)+1
-        
+
         # Make a result numpy matrix
         result = np.zeros((size, size))
 
@@ -198,21 +195,15 @@ class Simulation:
         return RoomInchemPyEvolver(room, global_settings)
 
     @staticmethod
-    def run_room_evolver_starmap_txt(evolver, t0, t_interval, initial_text_file):
+    def run_room_evolver_starmap(evolver, t0, t_interval, initial_condition, txt_file):
         """
         Use the room evolver to calculate new room concentrations
-        Start with an initial text file of concentrations
+        Start with an initial dataframe of concentrations or an initial text file
         """
-        df, _ = evolver.run(t0=t0, seconds_to_integrate=t_interval, initial_text_file=initial_text_file)
-        return df
-
-    @staticmethod
-    def run_room_evolver_starmap(evolver, t0, t_interval, initial_dataframe):
-        """
-        Use the room evolver to calculate new room concentrations
-        Start with an initial dataframe of concentrations
-        """
-        df, _ = evolver.run(t0=t0, seconds_to_integrate=t_interval, initial_dataframe=initial_dataframe)
+        if (txt_file):
+            df, _ = evolver.run(t0=t0, seconds_to_integrate=t_interval, initial_text_file=initial_condition)
+        else:
+            df, _ = evolver.run(t0=t0, seconds_to_integrate=t_interval, initial_dataframe=initial_condition)
         return df
 
     @staticmethod
