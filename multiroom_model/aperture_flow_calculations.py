@@ -5,6 +5,12 @@ import pandas as pd
 
 
 class ApertureFlowCalculator:
+    """
+        @brief A class used to deduce absolute changes to concentrations, caused by a flux through an aperture
+        It knows which species to transport, either between rooms or to the outside
+        It uses the rooms volumes and current concentrations to deduce the absolute concentration changes
+
+    """
     indoor_var_list: List[str]
     outdoor_var_list: List[str]
 
@@ -17,12 +23,29 @@ class ApertureFlowCalculator:
                               room_2_concentrations: pd.Series,
                               room_1_volume: float,
                               room_2_volume: float) -> Tuple[pd.Series, pd.Series]:
+        '''
+        Deduce the absolute changes in concentrations, caused by the flux arising from an aperture between 2 rooms
+
+        inputs:
+            flux = The flux through the aperture, calculated in aperture_calculations
+            delta_time = The interval of time being considered
+            room_1_concentrations = the starting concentration of room 1
+            room_2_concentrations = the starting concentration of room 2
+            room_1_volume = the volume of room 1
+            room_2_volume = the volume of room 2
+
+        returns:
+            results = concentration_change_in_room_1, concentration_change_in_room_2
+        '''
+        # deduce the absolute airflow over the time interval
         flow_from_1_to_2 = flux.from_1_to_2*delta_time
         flow_from_2_to_1 = flux.from_2_to_1*delta_time
 
+        # The absolute quantity moved in this interval
         quantities_moved_from_1_to_2 = flow_from_1_to_2 * room_1_concentrations.loc[self.indoor_var_list]
         quantities_moved_from_2_to_1 = flow_from_2_to_1 * room_2_concentrations.loc[self.indoor_var_list]
 
+        # the concentration change, coming from the absolute entry, absolute exit, and volume
         concentration_change_in_room_1 = (quantities_moved_from_2_to_1-quantities_moved_from_1_to_2)/room_1_volume
         concentration_change_in_room_2 = (quantities_moved_from_1_to_2-quantities_moved_from_2_to_1)/room_2_volume
 
@@ -31,26 +54,44 @@ class ApertureFlowCalculator:
     def outdoor_concentration_changes(self, flux: Fluxes,
                                       delta_time: float,
                                       room_1_concentrations: pd.Series,
-                                      room_1_volume: float) -> Tuple[pd.Series]:
+                                      room_1_volume: float) -> pd.Series:
+        '''
+        Deduce the absolute changes in concentrations,
+        caused by the flux arising from an aperture from a room to its outside
+
+        inputs:
+            flux = The flux through the aperture, calculated in aperture_calculations
+            delta_time = The interval of time being considered
+            room_1_concentrations = the starting concentration of room 1
+            room_1_volume = the volume of room 1
+
+        returns:
+            results = concentration_change_in_room_1
+        '''
+
+        # deduce the absolute airflow over the time interval
         flow_from_1_to_2 = flux.from_1_to_2*delta_time
         flow_from_2_to_1 = flux.from_2_to_1*delta_time
 
+        # The absolute quantity exiting in this interval
         quantities_moved_from_1_to_2 = flow_from_1_to_2 * room_1_concentrations.loc[self.indoor_var_list]
 
+        # The species to consider coming from the outside - restrict species to those defined outside this room
         outdoor_concentrations = pd.Series()
         for outdoor_var in self.outdoor_var_list:
             var_without_OUT = outdoor_var[:-3]
-            if(var_without_OUT in room_1_concentrations.keys()):
+            if (var_without_OUT in room_1_concentrations.keys()):
                 outdoor_concentrations.loc[var_without_OUT] = room_1_concentrations.loc[outdoor_var]
 
+        # The absolute quantity entering in this interval
         quantities_moved_from_2_to_1 = flow_from_2_to_1 * outdoor_concentrations
 
-        #fill any blanks with 0s so summing the 2 sets doesn't give any nans
+        # fill any blanks with 0s so summing the 2 sets doesn't give any nans
         common_index = quantities_moved_from_1_to_2.index.union(quantities_moved_from_2_to_1.index)
         q1to2_filled = quantities_moved_from_1_to_2.reindex(common_index, fill_value=0)
         q2to1_filled = quantities_moved_from_2_to_1.reindex(common_index, fill_value=0)
 
-
+        # the concentration change, coming from the absolute entry, absolute exit, and volume
         concentration_change_in_room_1 = (q2to1_filled-q1to2_filled)/room_1_volume
 
         return concentration_change_in_room_1
