@@ -1,7 +1,7 @@
 import unittest
 import json
 
-from multiroom_model.json_parser import RoomChemistryJSONBuilder
+from multiroom_model.json_parser import BuildingJSONParser
 from multiroom_model.time_dep_value import TimeDependentValue
 from multiroom_model.bracketed_value import TimeBracketedValue
 from multiroom_model.surface_composition import SurfaceComposition
@@ -214,3 +214,13 @@ class TestRoomChemistryFromJson(unittest.TestCase):
         self.assertEqual(len(self.room.n_adults.times()), 24)
         self.assertEqual(len(self.room.n_children.times()), 24)
 
+
+class TestJSON(unittest.TestCase):
+    def setUp(self):
+        self.results = BuildingJSONParser.from_json_file("config_rooms/config.json")
+
+    def test_number_of_rooms(self):
+        self.assertEqual(len(self.results["rooms"]), 9, "Expected 9 rooms")
+
+    def test_number_of_apertures(self):
+        self.assertEqual(len(self.results["apertures"]), 18, "Expected 18 apertures")

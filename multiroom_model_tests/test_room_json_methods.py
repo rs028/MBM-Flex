@@ -8,7 +8,7 @@ from multiroom_model.json_parser import RoomChemistryJSONBuilder
 
 class TestRoomPopulationJSON(unittest.TestCase):
     def setUp(self):
-        self.rooms = RoomChemistryJSONBuilder.parse_rooms_from_json_file("config_rooms/rooms.json")
+        self.rooms = RoomChemistryJSONBuilder.parse_rooms_from_json_file("config_rooms/config.json")
         self.room_ids = list(self.rooms.keys())
 
     def test_number_of_rooms(self):
