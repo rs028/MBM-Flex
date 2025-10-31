@@ -226,15 +226,20 @@ class ApertureCalculation:
                                                       self.building_direction_in_radians)
 
             position = contribution.position_down_path if path_windspeed > 0 else 1.0-contribution.position_down_path
-            apperture_windspeed = -path_windspeed if contribution.reversed else path_windspeed
+
+            path_wind_direction_sign = -1 if path_windspeed < 0 else 1
+            aperture_reversed_sign = -1 if contribution.reversed else 1
+            flow_advection_sign = path_wind_direction_sign*aperture_reversed_sign
 
             discharge_coefficient = 0.7/(1.0 + position)
 
-            sum += flow_advection(apperture_windspeed,
+            flow_advection_magnitude = flow_advection(path_windspeed,
                                   self.aperture.area,
                                   discharge_coefficient,
                                   self.building_pressure_coefficients,
                                   self.air_density)
+            
+            sum += flow_advection_sign * flow_advection_magnitude
 
         return sum
 

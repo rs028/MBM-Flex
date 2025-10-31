@@ -19,7 +19,11 @@ class GlobalSettings:
         date: str = '21-06-2020',
         lat: float = 45.4,
         path: str = None,
-        reactions_output: bool = False
+        reactions_output: bool = False,
+        building_direction_in_radians: float = 0.0,
+        air_density: float = 0.0,
+        upwind_pressure_coefficient: float = 0.3,
+        downwind_pressure_coefficient: float = -0.2
     ):
         """
         @param filename: Input FACSIMILE format filename.
@@ -36,6 +40,10 @@ class GlobalSettings:
         @param constrained_file: CSV file to constrain species or rates over time.
         @param dt: Time step for integration (seconds).
         @param reactions_output: Save detailed reaction rates and constants.
+        @param building_direction_in_radians: Orientation of the building to determine wind components.
+        @param air_density: Density of the air for advection flow calculations.
+        @param upwind_pressure_coefficient: for advection flow calculations.
+        @param downwind_pressure_coefficient: for advection flow calculations.
     """
         self.filename = filename
         self.INCHEM_additional = INCHEM_additional
@@ -53,3 +61,7 @@ class GlobalSettings:
         self.lat = lat
         self.path = path
         self.reactions_output = reactions_output
+        self.building_direction_in_radians = building_direction_in_radians
+        self.air_density = air_density
+        self.upwind_pressure_coefficient = upwind_pressure_coefficient
+        self.downwind_pressure_coefficient = downwind_pressure_coefficient

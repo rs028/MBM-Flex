@@ -56,8 +56,7 @@ class TestAperturePopulation(unittest.TestCase):
 class TestWindDefinitionPopulation(unittest.TestCase):
 
     def test_times(self):
-        wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv", 1.23)
-        self.assertEqual(wind_definition.building_direction, 1.23, "Expected 25 apertures")
+        wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv")
         self.assertIsInstance(wind_definition.wind_speed, TimeDependentValue)
         self.assertEqual(len(wind_definition.wind_speed.times()), 24)
         self.assertIsInstance(wind_definition.wind_direction, TimeDependentValue)
