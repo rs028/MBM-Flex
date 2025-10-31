@@ -5,7 +5,7 @@ from .room_chemistry import RoomChemistry
 from .surface_composition import SurfaceComposition
 from .time_dep_value import TimeDependentValue
 from .bracketed_value import TimeBracketedValue
-from .global_settings import GlobalSettings 
+from .global_settings import GlobalSettings
 from .wind_definition import WindDefinition
 from .aperture import Aperture, Side
 
@@ -58,13 +58,22 @@ class RoomChemistryJSONBuilder:
     """
 
     @staticmethod
-    def from_json_text(json_text: str) -> RoomChemistry:
-        data = json.loads(json_text)
+    def _from_any(room_obj: Any) -> RoomChemistry:
+        if isinstance(room_obj, dict):
+            return RoomChemistryJSONBuilder.from_dict(room_obj)
+        elif isinstance(room_obj, str):
+            return RoomChemistryJSONBuilder.from_json_file(room_obj)
+        else:
+            raise ValueError(f"Each room entry must be a dict or filename (item was {type(room_obj)})")
+
+    @staticmethod
+    def from_json_file(json_file: str) -> RoomChemistry:
+        with open(json_file, 'r') as file:
+            data = json.loads(file.read())
         return RoomChemistryJSONBuilder.from_dict(data)
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> RoomChemistry:
-        # Required constructor fields
         try:
             volume = float(data["volume_in_m3"])
             surf_area = float(data["surf_area_in_m2"])
@@ -77,7 +86,6 @@ class RoomChemistryJSONBuilder:
         if not isinstance(comp_data, dict):
             raise ValueError("composition must be an object/dict of material percentages")
 
-        # Build SurfaceComposition (accepts missing keys since SurfaceComposition has defaults)
         sc = SurfaceComposition(
             soft=comp_data.get("soft", 0),
             paint=comp_data.get("paint", 0),
@@ -132,27 +140,11 @@ class RoomChemistryJSONBuilder:
 
     @staticmethod
     def parse_rooms_from_json_text(json_text: str) -> Dict[str, RoomChemistry]:
-        """
-        Parse JSON text that contains multiple rooms and return a dict mapping int room ids to RoomChemistry.
-        Accepts:
-          - top-level list of room dicts: [ {...}, {...} ]
-          - top-level dict with "rooms": list or mapping
-          - top-level dict mapping ids -> room dicts: { "1": {...}, "2": {...} }
-        The returned dict's keys are ints if possible; otherwise consecutive integers starting at 0.
-        """
         data = json.loads(json_text)
         return RoomChemistryJSONBuilder.parse_rooms_from_dict(data)
 
     @staticmethod
     def parse_rooms_from_json_file(json_file: str) -> Dict[str, RoomChemistry]:
-        """
-        Parse JSON text that contains multiple rooms and return a dict mapping int room ids to RoomChemistry.
-        Accepts:
-          - top-level list of room dicts: [ {...}, {...} ]
-          - top-level dict with "rooms": list or mapping
-          - top-level dict mapping ids -> room dicts: { "1": {...}, "2": {...} }
-        The returned dict's keys are ints if possible; otherwise consecutive integers starting at 0.
-        """
         with open(json_file, 'r') as file:
             data = json.loads(file.read())
         return RoomChemistryJSONBuilder.parse_rooms_from_dict(data)
@@ -162,45 +154,27 @@ class RoomChemistryJSONBuilder:
         """
         Parse a Python object (decoded JSON) containing multiple rooms.
         """
-        # If data is a list -> list of room objects
-        if isinstance(data, list):
-            rooms_src = data
-            # assign integer ids by index
-            result: Dict[str, RoomChemistry] = {}
-            for i, room_obj in enumerate(rooms_src):
-                if not isinstance(room_obj, dict):
-                    raise ValueError(f"Each room entry must be an object/dict (item {i} was {type(room_obj)})")
-                result[str(i)] = RoomChemistryJSONBuilder.from_dict(room_obj)
-            return result
-
-        # If top-level has 'rooms' key, use it (can be list or mapping)
+        # If top-level has 'rooms' key, use it
         if isinstance(data, dict) and "rooms" in data:
             rooms_val = data["rooms"]
-            # if list -> behave like list case
-            if isinstance(rooms_val, list):
-                return RoomChemistryJSONBuilder.parse_rooms_from_dict(rooms_val)
-            elif isinstance(rooms_val, dict):
-                result: Dict[str, RoomChemistry] = {}
-                for k, v in rooms_val.items():
-                    if not isinstance(v, dict):
-                        raise ValueError(f"Room entry for key {k} must be a dict")
-                    result[k] = RoomChemistryJSONBuilder.from_dict(v)
-                return result
-            else:
-                raise ValueError("'rooms' must be a list or a mapping")
+            return RoomChemistryJSONBuilder.parse_rooms_from_dict(rooms_val)
 
-        result: Dict[str, RoomChemistry] = {}
-        for k, v in data.items():
-            if not isinstance(v, dict):
-                raise ValueError(f"Room entry for key {k} must be a dict")
-            result[k] = RoomChemistryJSONBuilder.from_dict(v)
-        return result
-    
+        # If data is a list -> dict of room objects keyed on index
+        if isinstance(data, list):
+            return dict((i, RoomChemistryJSONBuilder._from_any(room_obj)) for i, room_obj in enumerate(data))
+
+        # If data is a dict -> dict of room objects
+        elif isinstance(data, dict):
+            return dict((key, RoomChemistryJSONBuilder._from_any(room_obj)) for key, room_obj in data.items())
+
+        else:
+            raise ValueError("'rooms' must be a list or a mapping")
+
     @staticmethod
     def build_wind_from_json_text(json_text: str) -> WindDefinition:
         data = json.loads(json_text)
         return RoomChemistryJSONBuilder.build_wind_from_dict(data)
-    
+
     @staticmethod
     def build_wind_from_dict(data: Dict[str, Any]) -> WindDefinition:
 
@@ -246,8 +220,7 @@ class RoomChemistryJSONBuilder:
         return out
 
     @staticmethod
-    def _make_time_dep(obj: Any, default_continuous: bool = True) -> Optional["TimeDependentValue"]:
-        from .time_dep_value import TimeDependentValue  # local import to avoid circulars
+    def _make_time_dep(obj: Any, default_continuous: bool = True) -> Optional[TimeDependentValue]:
         if obj is None:
             return None
         continuous = bool(obj.get("continuous", default_continuous)) if isinstance(obj, dict) else default_continuous
@@ -352,12 +325,6 @@ class GlobalSettingsJSONBuilder:
     """
 
     @staticmethod
-    def from_json_text(json_text: str) -> GlobalSettings:
-        """Parse a GlobalSettings object directly from JSON text."""
-        data = json.loads(json_text)
-        return GlobalSettingsJSONBuilder.from_dict(data)
-
-    @staticmethod
     def from_dict(data: Dict[str, Any]) -> GlobalSettings:
         """Create a GlobalSettings instance from a Python dictionary."""
         if not isinstance(data, dict):
@@ -386,8 +353,6 @@ class GlobalSettingsJSONBuilder:
             upwind_pressure_coefficient=float(data.get("upwind_pressure_coefficient", 0.3)),
             downwind_pressure_coefficient=float(data.get("downwind_pressure_coefficient", -0.2)),
         )
-    
-
 
 
 class ApertureJSONBuilder:
@@ -407,13 +372,6 @@ class ApertureJSONBuilder:
       ["2", "Left", 0.5]
     ]
     """
-
-    @staticmethod
-    def from_json_text(json_text: str, rooms: Dict[str, Any]) -> List[Aperture]:
-        """Parse apertures from JSON text using the provided room dictionary."""
-        data = json.loads(json_text)
-        return ApertureJSONBuilder.from_dict(data, rooms)
-
     @staticmethod
     def from_json_file(filename: str, rooms: Dict[str, Any]) -> List[Aperture]:
         """Parse apertures from a JSON file."""
@@ -484,7 +442,6 @@ class ApertureJSONBuilder:
             side = Side.Unknown
 
         return Aperture(room1=room1, room2=room2, area=area, side_of_room_1=side)
-    
 
 
 class BuildingJSONParser:
@@ -497,11 +454,9 @@ class BuildingJSONParser:
     """
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]):
+    def from_dicts(data: Dict[str, Any], rooms_data: Dict[str, Any]):
         # Parse rooms first
-        if "rooms" not in data:
-            raise ValueError("Missing 'rooms' section in building JSON")
-        rooms: Dict[str, Any] = RoomChemistryJSONBuilder.parse_rooms_from_dict(data["rooms"])
+        rooms: Dict[str, RoomChemistry] = RoomChemistryJSONBuilder.parse_rooms_from_dict(rooms_data)
 
         # Parse wind definition
         if "wind" not in data:
@@ -527,6 +482,13 @@ class BuildingJSONParser:
         }
 
     @staticmethod
+    def from_dict(data: Dict[str, Any]):
+        # Parse rooms first
+        if "rooms" not in data:
+            raise ValueError("Missing 'rooms' section in building JSON")
+        return BuildingJSONParser.from_dicts(data, data["rooms"])
+
+    @staticmethod
     def from_json_file(filename: str):
         import json
         with open(filename, "r") as f:
@@ -534,7 +496,8 @@ class BuildingJSONParser:
         return BuildingJSONParser.from_dict(data)
 
     @staticmethod
-    def from_json_text(json_text: str):
+    def from_json_files(building_filename: str, rooms_files: Dict[str, Any]):
         import json
-        data = json.loads(json_text)
-        return BuildingJSONParser.from_dict(data)
+        with open(building_filename, "r") as f:
+            data = json.load(f)
+        return BuildingJSONParser.from_dicts(data, rooms_files)

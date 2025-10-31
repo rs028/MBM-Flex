@@ -1,226 +1,134 @@
 import unittest
-import json
 
-from multiroom_model.json_parser import BuildingJSONParser
+from multiroom_model.json_parser import BuildingJSONParser, RoomChemistryJSONBuilder
+from multiroom_model.room_chemistry import RoomChemistry
 from multiroom_model.time_dep_value import TimeDependentValue
 from multiroom_model.bracketed_value import TimeBracketedValue
 from multiroom_model.surface_composition import SurfaceComposition
 
 
-EXPLICIT_JSON = r'''
-{
-  "volume_in_m3": 10.0,
-  "surf_area_in_m2": 29.7,
-  "light_type": "Incand",
-  "glass_type": "glass_C",
-  "composition": {
-    "soft": 0.0,
-    "paint": 40.0,
-    "wood": 10.0,
-    "metal": 5.0,
-    "concrete": 0.0,
-    "paper": 0.0,
-    "lino": 0.0,
-    "plastic": 0.0,
-    "human": 0.0,
-    "glass": 45.0,
-    "other": 0.0
-  },
-  "temp_in_kelvin": {
-    "values": [
-      { "time": 0, "value": 288.15 },
-      { "time": 25200, "value": 288.15 },
-      { "time": 50400, "value": 294.15 }
-    ],
-    "continuous": true
-  },
-  "rh_in_percent": {
-    "values": [
-      { "time": 0, "value": 45.0 },
-      { "time": 25200, "value": 45.0 },
-      { "time": 50400, "value": 40.0 }
-    ],
-    "continuous": true
-  },
-  "airchange_in_per_second": {
-    "values": [
-      { "time": 0, "value": 0.5 },
-      { "time": 86400, "value": 1.0 }
-    ],
-    "continuous": true
-  },
-  "light_switch": {
-    "values": [
-      { "time": 0, "value": 0 },
-      { "time": 25200, "value": 1 },
-      { "time": 50400, "value": 0 }
-    ],
-    "continuous": false
-  },
-  "emissions": {
-    "LIMONENE": {
-      "values": [
-        { "start": 46800, "end": 50400, "value": 5.00E+08 }
-      ]
-    },
-    "BPINENE": {
-      "values": [
-        { "start": 46800, "end": 50400, "value": 5.00E+10 }
-      ]
-    }
-  },
-  "n_adults": {
-    "values": [
-      { "time": 0, "value": 0 },
-      { "time": 3600, "value": 0 },
-      { "time": 7200, "value": 0 },
-      { "time": 10800, "value": 0 },
-      { "time": 14400, "value": 0 },
-      { "time": 18000, "value": 0 },
-      { "time": 21600, "value": 1 },
-      { "time": 25200, "value": 1 },
-      { "time": 28800, "value": 1 },
-      { "time": 32400, "value": 1 },
-      { "time": 36000, "value": 1 },
-      { "time": 39600, "value": 1 },
-      { "time": 43200, "value": 1 },
-      { "time": 46800, "value": 1 },
-      { "time": 50400, "value": 1 },
-      { "time": 54000, "value": 1 },
-      { "time": 57600, "value": 1 },
-      { "time": 61200, "value": 0 },
-      { "time": 64800, "value": 0 },
-      { "time": 68400, "value": 0 },
-      { "time": 72000, "value": 0 },
-      { "time": 75600, "value": 0 },
-      { "time": 79200, "value": 0 },
-      { "time": 82800, "value": 0 }
-    ],
-    "continuous": false
-  },
-  "n_children": {
-    "values": [
-      { "time": 0, "value": 0 },
-      { "time": 3600, "value": 0 },
-      { "time": 7200, "value": 0 },
-      { "time": 10800, "value": 0 },
-      { "time": 14400, "value": 0 },
-      { "time": 18000, "value": 0 },
-      { "time": 21600, "value": 0 },
-      { "time": 25200, "value": 0 },
-      { "time": 28800, "value": 0 },
-      { "time": 32400, "value": 0 },
-      { "time": 36000, "value": 0 },
-      { "time": 39600, "value": 0 },
-      { "time": 43200, "value": 0 },
-      { "time": 46800, "value": 0 },
-      { "time": 50400, "value": 0 },
-      { "time": 54000, "value": 0 },
-      { "time": 57600, "value": 0 },
-      { "time": 61200, "value": 0 },
-      { "time": 64800, "value": 0 },
-      { "time": 68400, "value": 0 },
-      { "time": 72000, "value": 0 },
-      { "time": 75600, "value": 0 },
-      { "time": 79200, "value": 0 },
-      { "time": 82800, "value": 0 }
-    ],
-    "continuous": false
-  }
-}
-'''
+class BaseTestJSON(unittest.TestCase):
+    results = None
 
-
-class TestRoomChemistryFromJson(unittest.TestCase):
-    def setUp(self):
-        # parse the example JSON once for all tests
-        self.room = RoomChemistryJSONBuilder.from_json_text(EXPLICIT_JSON)
-
-    def test_basic_fields(self):
-        self.assertAlmostEqual(self.room.volume_in_m3, 10.0)
-        self.assertAlmostEqual(self.room.surf_area_in_m2, 29.7)
-        self.assertEqual(self.room.light_type, "Incand")
-        self.assertEqual(self.room.glass_type, "glass_C")
-
-    def test_composition_explicit(self):
-        comp = self.room.composition
-        self.assertIsInstance(comp, SurfaceComposition)
-        self.assertAlmostEqual(comp.soft, 0.0)
-        self.assertAlmostEqual(comp.paint, 40.0)
-        self.assertAlmostEqual(comp.wood, 10.0)
-        self.assertAlmostEqual(comp.metal, 5.0)
-        self.assertAlmostEqual(comp.concrete, 0.0)
-        self.assertAlmostEqual(comp.paper, 0.0)
-        self.assertAlmostEqual(comp.lino, 0.0)
-        self.assertAlmostEqual(comp.plastic, 0.0)
-        self.assertAlmostEqual(comp.human, 0.0)
-        self.assertAlmostEqual(comp.glass, 45.0)
-        self.assertAlmostEqual(comp.other, 0.0)
-
-    def test_time_dependent_values(self):
-        # temperature
-        self.assertIsNotNone(self.room.temp_in_kelvin)
-        self.assertIsInstance(self.room.temp_in_kelvin, TimeDependentValue)
-        times = self.room.temp_in_kelvin.times()
-        vals = self.room.temp_in_kelvin.values()
-        self.assertEqual(len(times), 3)
-        self.assertEqual(len(vals), 3)
-        self.assertAlmostEqual(times[0], 0.0)
-        self.assertAlmostEqual(vals[0], 288.15)
-
-        # relative humidity
-        self.assertIsNotNone(self.room.rh_in_percent)
-        self.assertIsInstance(self.room.rh_in_percent, TimeDependentValue)
-        self.assertEqual(len(self.room.rh_in_percent.times()), 3)
-
-        # airchange (note: values in example are raw numbers; builder converts to floats)
-        self.assertIsNotNone(self.room.airchange_in_per_second)
-        self.assertIsInstance(self.room.airchange_in_per_second, TimeDependentValue)
-        self.assertEqual(len(self.room.airchange_in_per_second.times()), 2)
-
-        # light switch is step/discrete
-        self.assertIsNotNone(self.room.light_switch)
-        self.assertIsInstance(self.room.light_switch, TimeDependentValue)
-        self.assertEqual(len(self.room.light_switch.times()), 3)
-        # check the step values sequence
-        self.assertEqual(self.room.light_switch.values(), [0.0, 1.0, 0.0])
-
-    def test_emissions_parsed_as_bracketed(self):
-        self.assertTrue(hasattr(self.room, "emissions"))
-        emis = self.room.emissions
-        self.assertIn("LIMONENE", emis)
-        self.assertIn("BPINENE", emis)
-        self.assertIsInstance(emis["LIMONENE"], TimeBracketedValue)
-        self.assertIsInstance(emis["BPINENE"], TimeBracketedValue)
-
-        lim_vals = emis["LIMONENE"].values()
-        bpin_vals = emis["BPINENE"].values()
-        self.assertEqual(len(lim_vals), 1)
-        self.assertEqual(len(bpin_vals), 1)
-
-        self.assertAlmostEqual(lim_vals[0][0], 46800.0)
-        self.assertAlmostEqual(lim_vals[0][1], 50400.0)
-        self.assertAlmostEqual(lim_vals[0][2], 5.00e8)
-
-        self.assertAlmostEqual(bpin_vals[0][0], 46800.0)
-        self.assertAlmostEqual(bpin_vals[0][1], 50400.0)
-        self.assertAlmostEqual(bpin_vals[0][2], 5.00e10)
-
-    def test_people_counts(self):
-        self.assertIsNotNone(self.room.n_adults)
-        self.assertIsNotNone(self.room.n_children)
-        self.assertIsInstance(self.room.n_adults, TimeDependentValue)
-        self.assertIsInstance(self.room.n_children, TimeDependentValue)
-        self.assertEqual(len(self.room.n_adults.times()), 24)
-        self.assertEqual(len(self.room.n_children.times()), 24)
-
-
-class TestJSON(unittest.TestCase):
-    def setUp(self):
-        self.results = BuildingJSONParser.from_json_file("config_rooms/config.json")
+    @classmethod
+    def setUpClass(cls):
+        if cls is BaseTestJSON:
+            raise unittest.SkipTest("Base class — skipping")
+        cls.rooms = cls.results["rooms"]
 
     def test_number_of_rooms(self):
         self.assertEqual(len(self.results["rooms"]), 9, "Expected 9 rooms")
 
     def test_number_of_apertures(self):
         self.assertEqual(len(self.results["apertures"]), 18, "Expected 18 apertures")
+
+    def test_room_basic_fields(self):
+        for room_id, room in self.rooms.items():
+            with self.subTest(room_id=room_id):
+                self.assertIsInstance(room, RoomChemistry)
+                self.assertIsInstance(room.volume_in_m3, (int, float))
+                self.assertGreater(room.volume_in_m3, 0)
+                self.assertIsInstance(room.surf_area_in_m2, (int, float))
+                self.assertIsInstance(room.glass_type, str)
+                self.assertIsInstance(room.light_type, str)
+
+    def test_composition_fields_and_sum(self):
+        for room_id, room in self.rooms.items():
+            with self.subTest(room_id=room_id):
+                comp = room.composition
+                self.assertIsInstance(comp, SurfaceComposition)
+                for mat_name, value in vars(comp).items():
+                    self.assertIsInstance(value, (int, float), f"{mat_name} should be a number")
+                    self.assertGreaterEqual(value, 0, f"{mat_name} should be >= 0")
+                    self.assertLessEqual(value, 100, f"{mat_name} should be <= 100")
+                total = sum(vars(comp).values())
+                self.assertAlmostEqual(total, 100.0, delta=1.0, msg=f"Room {room_id} has bad composition sum: {total}%")
+
+    def test_edge_case_compositions(self):
+        room5 = self.rooms["room 5"]
+        room7 = self.rooms["room 7"]
+        room8 = self.rooms["room 8"]
+
+        self.assertEqual(room5.composition.soft, 0)
+        self.assertEqual(room5.composition.other, 0)
+        self.assertEqual(room7.composition.wood, 40)
+        self.assertEqual(room8.composition.lino, 50)
+        self.assertEqual(room8.composition.plastic, 18)
+
+    def test_rooms_exact_values(self):
+        expected_data = {
+            "room 1": {"volume_in_m3": 10, "surf_area_in_m2": 29.7, "light_type": "Incand", "glass_type": "glass_C"},
+            "room 2": {"volume_in_m3": 37.5, "surf_area_in_m2": 81, "light_type": "LED", "glass_type": "no_sunlight"},
+            "room 3": {"volume_in_m3": 32.4, "surf_area_in_m2": 61.8, "light_type": "UFT", "glass_type": "low_emissivity"},
+            "room 4": {"volume_in_m3": 40.5, "surf_area_in_m2": 81.3, "light_type": "CFT", "glass_type": "low_emissivity_film"},
+            "room 5": {"volume_in_m3": 24.5, "surf_area_in_m2": 51.1, "light_type": "FT", "glass_type": "no_sunlight"},
+            "room 6": {"volume_in_m3": 31.6, "surf_area_in_m2": 98.3, "light_type": "CFL", "glass_type": "low_emissivity"},
+            "room 7": {"volume_in_m3": 22.5, "surf_area_in_m2": 48, "light_type": "Incand", "glass_type": "low_emissivity_film"},
+            "room 8": {"volume_in_m3": 50.4, "surf_area_in_m2": 86.4, "light_type": "UFT", "glass_type": "glass_C"},
+            "room 9": {"volume_in_m3": 132, "surf_area_in_m2": 158, "light_type": "Incand", "glass_type": "no_sunlight"},
+        }
+
+        for room_num, expected in expected_data.items():
+            with self.subTest(room=room_num):
+                room = self.rooms[room_num]
+                self.assertEqual(room.volume_in_m3, expected["volume_in_m3"])
+                self.assertAlmostEqual(room.surf_area_in_m2, expected["surf_area_in_m2"])
+                self.assertEqual(room.light_type, expected["light_type"])
+                self.assertEqual(room.glass_type, expected["glass_type"])
+
+    def test_populate_emissions(self):
+            room = self.rooms["room 1"]
+            self.assertTrue(hasattr(room, 'emissions'))
+            self.assertEqual(len(room.emissions), 2)
+            self.assertTrue("LIMONENE" in room.emissions)
+            self.assertTrue("BPINENE" in room.emissions)
+            for species, tvalue in room.emissions.items():
+                self.assertIsInstance(tvalue, TimeBracketedValue, f"{species} should be TimeBracketedValue")
+
+            self.assertEqual(len(room.emissions["LIMONENE"].values()), 1)
+            self.assertEqual(len(room.emissions["BPINENE"].values()), 1)
+
+
+            self.assertEqual(room.emissions["LIMONENE"].values()[0][0], 46800)
+            self.assertEqual(room.emissions["BPINENE"].values()[0][0], 46800)
+
+            self.assertEqual(room.emissions["LIMONENE"].values()[0][1], 50400)
+            self.assertEqual(room.emissions["BPINENE"].values()[0][1], 50400)
+
+            self.assertEqual(room.emissions["LIMONENE"].values()[0][2], 5.00E+08)
+            self.assertEqual(room.emissions["BPINENE"].values()[0][2], 5.00E+10)
+
+    def test_populate_tvar(self):
+        for room in self.rooms.values():
+            self.assertIsInstance(room.temp_in_kelvin, TimeDependentValue)
+            self.assertIsInstance(room.rh_in_percent, TimeDependentValue)
+            self.assertIsInstance(room.airchange_in_per_second, TimeDependentValue)
+            self.assertIsInstance(room.light_switch, TimeDependentValue)
+
+    def test_populate_expos(self):
+        for room in self.rooms.values():
+            self.assertIsInstance(room.n_adults, TimeDependentValue)
+            self.assertIsInstance(room.n_children, TimeDependentValue)
+
+
+class TestJSONAllInOne(BaseTestJSON):
+    results = BuildingJSONParser.from_json_file("config_rooms/json/all_in_one.json")
+
+
+class TestJSONReferencingRoomFiles(BaseTestJSON):
+    results = BuildingJSONParser.from_json_file("config_rooms/json/building_ref_roomfiles.json")
+
+
+class TestJSONWithRoomFiles(BaseTestJSON):
+    rooms_files = {
+        "room 1": "config_rooms/json/room_1.json",
+        "room 2": "config_rooms/json/room_2.json",
+        "room 3": "config_rooms/json/room_3.json",
+        "room 4": "config_rooms/json/room_4.json",
+        "room 5": "config_rooms/json/room_5.json",
+        "room 6": "config_rooms/json/room_6.json",
+        "room 7": "config_rooms/json/room_7.json",
+        "room 8": "config_rooms/json/room_8.json",
+        "room 9": "config_rooms/json/room_9.json",
+    }
+    results = BuildingJSONParser.from_json_files("config_rooms/json/building.json", rooms_files)
