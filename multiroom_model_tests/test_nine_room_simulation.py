@@ -47,7 +47,7 @@ class TestTwoRoomSimulation(unittest.TestCase):
         simulation = Simulation(
             global_settings=self.global_settings,
             rooms=rooms,
-            windows=[])
+            apertures=[])
 
         initial_conditions = dict([(r, 'initial_concentrations.txt') for r in rooms])
 
@@ -81,7 +81,7 @@ class TestTwoRoomSimulation(unittest.TestCase):
         simulation = Simulation(
             global_settings=self.global_settings,
             rooms=rooms,
-            windows=[])
+            apertures=[])
 
         initial_conditions = dict([(r, 'initial_concentrations.txt') for r in rooms])
 

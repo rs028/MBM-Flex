@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Tuple, Optional
 import json
+import pyjson5 
 
 from .room_chemistry import RoomChemistry
 from .surface_composition import SurfaceComposition
@@ -69,7 +70,7 @@ class RoomChemistryJSONBuilder:
     @staticmethod
     def from_json_file(json_file: str) -> RoomChemistry:
         with open(json_file, 'r') as file:
-            data = json.loads(file.read())
+            data = pyjson5.loads(file.read())
         return RoomChemistryJSONBuilder.from_dict(data)
 
     @staticmethod
@@ -139,17 +140,6 @@ class RoomChemistryJSONBuilder:
         return room
 
     @staticmethod
-    def parse_rooms_from_json_text(json_text: str) -> Dict[str, RoomChemistry]:
-        data = json.loads(json_text)
-        return RoomChemistryJSONBuilder.parse_rooms_from_dict(data)
-
-    @staticmethod
-    def parse_rooms_from_json_file(json_file: str) -> Dict[str, RoomChemistry]:
-        with open(json_file, 'r') as file:
-            data = json.loads(file.read())
-        return RoomChemistryJSONBuilder.parse_rooms_from_dict(data)
-
-    @staticmethod
     def parse_rooms_from_dict(data: Any) -> Dict[str, RoomChemistry]:
         """
         Parse a Python object (decoded JSON) containing multiple rooms.
@@ -169,11 +159,6 @@ class RoomChemistryJSONBuilder:
 
         else:
             raise ValueError("'rooms' must be a list or a mapping")
-
-    @staticmethod
-    def build_wind_from_json_text(json_text: str) -> WindDefinition:
-        data = json.loads(json_text)
-        return RoomChemistryJSONBuilder.build_wind_from_dict(data)
 
     @staticmethod
     def build_wind_from_dict(data: Dict[str, Any]) -> WindDefinition:
@@ -373,13 +358,6 @@ class ApertureJSONBuilder:
     ]
     """
     @staticmethod
-    def from_json_file(filename: str, rooms: Dict[str, Any]) -> List[Aperture]:
-        """Parse apertures from a JSON file."""
-        with open(filename, "r") as f:
-            data = json.load(f)
-        return ApertureJSONBuilder.from_dict(data, rooms)
-
-    @staticmethod
     def from_dict(data: Any, rooms: Dict[str, Any]) -> List[Aperture]:
         """Parse apertures from a Python list or dict."""
         if not isinstance(data, list):
@@ -490,14 +468,12 @@ class BuildingJSONParser:
 
     @staticmethod
     def from_json_file(filename: str):
-        import json
         with open(filename, "r") as f:
-            data = json.load(f)
+            data = pyjson5.load(f)
         return BuildingJSONParser.from_dict(data)
 
     @staticmethod
     def from_json_files(building_filename: str, rooms_files: Dict[str, Any]):
-        import json
         with open(building_filename, "r") as f:
-            data = json.load(f)
+            data = pyjson5.load(f)
         return BuildingJSONParser.from_dicts(data, rooms_files)
