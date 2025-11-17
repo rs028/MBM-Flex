@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Tuple, Optional
-import json
-import pyjson5 
+import pyjson5
 
 from .room_chemistry import RoomChemistry
 from .surface_composition import SurfaceComposition
@@ -14,46 +13,6 @@ from .aperture import Aperture, Side
 class RoomChemistryJSONBuilder:
     """
     Build RoomChemistry objects from JSON text or Python dictionaries.
-
-    This builder accepts both compact array forms (historical) and
-    explicit dict forms (recommended for clarity).
-
-    Supported JSON structure (keys are optional except the constructor args):
-    {
-      "volume_in_m3": 100.0,
-      "surf_area_in_m2": 50.0,
-      "light_type": "none",
-      "glass_type": "double",
-      "composition": { ... },
-
-      # time-dependent examples (either):
-      "temp_in_kelvin": [[0, 293.15], [3600, 295.15]],
-      "rh_in_percent": {"values": [[0, 40], [3600, 45]], "continuous": true},
-
-      # explicit time-value dicts (clearer):
-      "airchange_in_per_second": [
-          {"time": 0, "value": 0.0001},
-          {"t": 3600, "v": 0.0002}
-      ],
-
-      # light switch (step)
-      "light_switch": {"values": [{"time": 0, "value": 0}, {"time": 36000, "value": 1}], "continuous": false},
-
-      # emissions (bracketed triples), either compact:
-      "emissions": {
-          "NO2": [[0, 3600, 1.2], [7200, 10800, 0.5]],
-          # or explicit objects for triples:
-          "VOC": {"values": [{"start": 0, "end": 3600, "value": 0.2}]}
-      },
-
-      # people counts (time dependent)
-      "n_adults": [{"time":0, "value": 1}, {"time":3600, "value":2}],
-      "n_children": {"values": [[0, 0], [3600, 1]], "continuous": false}
-    }
-
-    Accepted key names in dict items:
-      - time-dependent entries: keys "time" or "t" for time, "value" or "v" for value
-      - bracketed entries: keys "start" or "s", "end" or "e", "value" or "v"
 
     The builder will convert and validate the inputs and return a RoomChemistry instance.
     """
@@ -126,7 +85,7 @@ class RoomChemistryJSONBuilder:
         if "emissions" in data:
             emis = data["emissions"]
             if not isinstance(emis, dict):
-                raise ValueError("emissions must be an object/dict keyed by species")
+                raise ValueError("emissions must be a dictionary keyed by species")
             room.emissions = {}
             for sp, val in emis.items():
                 room.emissions[str(sp)] = RoomChemistryJSONBuilder._make_bracketed(val)
@@ -216,13 +175,6 @@ class RoomChemistryJSONBuilder:
 
     @staticmethod
     def _normalize_bracketed_list(obj: Any) -> List[Tuple[float, float, float]]:
-        """
-        Accepts:
-          - list of [start, end, value]
-          - list of {"start":s, "end":e, "value":v} or {"s":..., "e":..., "v":...}
-          - dict {"values": ...}
-        Returns list of (start, end, value) tuples
-        """
         if obj is None:
             return []
         if isinstance(obj, dict):
@@ -282,31 +234,7 @@ class RoomChemistryJSONBuilder:
 
 class GlobalSettingsJSONBuilder:
     """
-    Build GlobalSettings objects from JSON text or Python dictionaries.
-
-    Example JSON:
-    {
-        "filename": "chem_mech/mcm_subset.fac",
-        "INCHEM_additional": true,
-        "particles": false,
-        "constrained_file": "constraints.csv",
-        "output_folder": "output/",
-        "dt": 0.002,
-        "H2O2_dep": true,
-        "O3_dep": false,
-        "custom": true,
-        "custom_filename": "custom_rxns.fac",
-        "diurnal": true,
-        "city": "London_urban",
-        "date": "21-06-2020",
-        "lat": 45.4,
-        "path": "/simulation/data",
-        "reactions_output": false,
-        "building_direction_in_radians": 1.57,
-        "air_density": 1.225,
-        "upwind_pressure_coefficient": 0.3,
-        "downwind_pressure_coefficient": -0.2
-    }
+    Build GlobalSettings objects from Python dictionary.
     """
 
     @staticmethod
@@ -342,13 +270,13 @@ class GlobalSettingsJSONBuilder:
 
 class ApertureJSONBuilder:
     """
-    Build a list of Aperture objects from JSON or Python dictionaries.
+    Build a list of Aperture objects from python dictionary.
 
     Expected structure examples:
 
     [
-      {"room1": "1", "room2": "2", "area": 1.2, "side_of_room_1": "Front"},
-      {"room1": "2", "room2": "Left", "area": 0.5}
+      {"origin": "1", "destination": "2", "area": 1.2, "side_of_room_1": "Front"},
+      {"origin": "2", "destination": "Left", "area": 0.5}
     ]
 
     OR compact:
@@ -372,46 +300,45 @@ class ApertureJSONBuilder:
                 raise ValueError(f"Error parsing aperture at index {i}: {e}")
         return apertures
 
-    # ---- Internal helper ----
     @staticmethod
     def _parse_single(item: Any, rooms: Dict[str, Any]) -> Aperture:
         """Parse one aperture entry."""
         # Accept both list-style and dict-style entries
         if isinstance(item, (list, tuple)):
-            # format: [room1_id, room2_id_or_side, area?, side_of_room_1?]
+            # format: [origin_room_id, destination_room_id_or_side, area?, side_of_room_1?]
             if len(item) < 2:
-                raise ValueError(f"Aperture list entry must have at least 2 items (room1, room2)")
-            room1_id = str(item[0])
-            room2_ref = item[1]
+                raise ValueError("Aperture list entry must have at least 2 items (origin, destination)")
+            origin_room_id = item[0]
+            destination_room_id = item[1]
             area = float(item[2]) if len(item) > 2 else 0.0
             side_name = item[3] if len(item) > 3 else "Unknown"
         elif isinstance(item, dict):
-            room1_id = str(item.get("room1"))
-            if room1_id is None:
-                raise ValueError("Missing 'room1' field")
-            room2_ref = item.get("room2")
-            if room2_ref is None:
-                raise ValueError("Missing 'room2' field")
+            origin_room_id = item.get("origin")
+            if origin_room_id is None:
+                raise ValueError("Missing 'origin' field")
+            destination_room_id = item.get("destination")
+            if destination_room_id is None:
+                raise ValueError("Missing 'destination' field")
             area = float(item.get("area", 0.0))
             side_name = item.get("side_of_room_1", "Unknown")
         else:
             raise ValueError(f"Unsupported aperture entry type: {type(item)}")
 
-        # resolve room1
-        if room1_id not in rooms:
-            raise ValueError(f"Unknown room1 ID '{room1_id}' in aperture")
-        room1 = rooms[room1_id]
+        # resolve origin_room
+        if origin_room_id not in rooms:
+            raise ValueError(f"Unknown origin_room ID '{origin_room_id}' in aperture")
+        origin_room = rooms[origin_room_id]
 
-        # resolve room2: either another room or a Side enum
-        if isinstance(room2_ref, (int, float)) or str(room2_ref) in rooms:
-            # room2 is another room id
-            room2 = rooms[str(room2_ref)]
+        # resolve destination_room: either another room or a Side enum
+        if isinstance(destination_room_id, (int, float)) or str(destination_room_id) in rooms:
+            # destination_room is another room id
+            destination_room = rooms[str(destination_room_id)]
         else:
             # treat as side/outside
             try:
-                room2 = Side[str(room2_ref)]
+                destination_room = Side[str(destination_room_id)]
             except KeyError:
-                raise ValueError(f"Invalid room2/side '{room2_ref}' (expected room key or Side name)")
+                raise ValueError(f"Invalid destination_room/side '{destination_room_id}' (expected room key or Side name)")
 
         # resolve side_of_room_1
         try:
@@ -419,7 +346,7 @@ class ApertureJSONBuilder:
         except KeyError:
             side = Side.Unknown
 
-        return Aperture(room1=room1, room2=room2, area=area, side_of_room_1=side)
+        return Aperture(origin=origin_room, destination=destination_room, area=area, side_of_room_1=side)
 
 
 class BuildingJSONParser:
