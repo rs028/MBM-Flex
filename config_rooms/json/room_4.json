@@ -38,22 +38,19 @@
         "values": [
           [0,1],
           [82800, 1]
-        ],
-        "continuous": false
+        ]
       },
       "emissions": {},
       "n_adults": {
         "values": [
-          { "time": 0, "value": 2 },
-          { "time": 82800, "value": 2 }
-        ],
-        "continuous": false
+          [0,2],
+          [82800, 2]
+        ]
       },
       "n_children": {
         "values": [
-          { "time": 0, "value": 1 },
-          { "time": 82800, "value": 1 }
-        ],
-        "continuous": false
+          [0,1],
+          [82800, 1]
+        ]
       }
     }

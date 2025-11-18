@@ -44,17 +44,15 @@
       "emissions": {},
       "n_adults": {
         "values": [
-          { "time": 0, "value": 0 },
-          { "time": 82800, "value": 0 }
-        ],
-        "continuous": false
+          [0,0],
+          [82800, 0]
+        ]
       },
       "n_children": {
         "values": [
-          { "time": 0, "value": 1 },
-          { "time": 82800, "value": 1 }
-        ],
-        "continuous": false
+          [0,1],
+          [82800, 1]
+        ]
       }
     
 }

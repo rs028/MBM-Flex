@@ -1,5 +1,5 @@
 import unittest
-import json
+import pyjson5
 from multiroom_model.surface_composition import SurfaceComposition
 from multiroom_model.room_chemistry import RoomChemistry
 from multiroom_model.time_dep_value import TimeDependentValue
@@ -29,34 +29,30 @@ EXPLICIT_JSON = r'''
   },
   "temp_in_kelvin": {
     "values": [
-      { "time": 0, "value": 288.15 },
-      { "time": 25200, "value": 288.15 },
-      { "time": 50400, "value": 294.15 }
-    ],
-    "continuous": true
+      [ 0, 288.15 ],
+      [ 25200, 288.15 ],
+      [ 50400, 294.15 ]
+    ]
   },
   "rh_in_percent": {
     "values": [
-      { "time": 0, "value": 45.0 },
-      { "time": 25200, "value": 45.0 },
-      { "time": 50400, "value": 40.0 }
-    ],
-    "continuous": true
+      [ 0, 45.0 ],
+      [ 25200, 45.0 ],
+      [ 50400, 40.0 ]
+    ]
   },
   "airchange_in_per_second": {
     "values": [
-      { "time": 0, "value": 0.5 },
-      { "time": 86400, "value": 1.0 }
-    ],
-    "continuous": true
+      [0, 0.5 ],
+      [86400, 1.0 ]
+    ]
   },
   "light_switch": {
     "values": [
-      { "time": 0, "value": 0 },
-      { "time": 25200, "value": 1 },
-      { "time": 50400, "value": 0 }
-    ],
-    "continuous": false
+      [ 0,0 ],
+      [ 25200, 1 ],
+      [ 50400, 0 ]
+    ]
   },
   "emissions": {
     "LIMONENE": {
@@ -72,61 +68,59 @@ EXPLICIT_JSON = r'''
   },
   "n_adults": {
     "values": [
-      { "time": 0, "value": 0 },
-      { "time": 3600, "value": 0 },
-      { "time": 7200, "value": 0 },
-      { "time": 10800, "value": 0 },
-      { "time": 14400, "value": 0 },
-      { "time": 18000, "value": 0 },
-      { "time": 21600, "value": 1 },
-      { "time": 25200, "value": 1 },
-      { "time": 28800, "value": 1 },
-      { "time": 32400, "value": 1 },
-      { "time": 36000, "value": 1 },
-      { "time": 39600, "value": 1 },
-      { "time": 43200, "value": 1 },
-      { "time": 46800, "value": 1 },
-      { "time": 50400, "value": 1 },
-      { "time": 54000, "value": 1 },
-      { "time": 57600, "value": 1 },
-      { "time": 61200, "value": 0 },
-      { "time": 64800, "value": 0 },
-      { "time": 68400, "value": 0 },
-      { "time": 72000, "value": 0 },
-      { "time": 75600, "value": 0 },
-      { "time": 79200, "value": 0 },
-      { "time": 82800, "value": 0 }
-    ],
-    "continuous": false
+      [ 0,      0 ],
+      [ 3600,   0 ],
+      [ 7200,   0 ],
+      [ 10800,  0 ],
+      [ 14400,  0 ],
+      [ 18000,  0 ],
+      [ 21600,  1 ],
+      [ 25200,  1 ],
+      [ 28800,  1 ],
+      [ 32400,  1 ],
+      [ 36000,  1 ],
+      [ 39600,  1 ],
+      [ 43200,  1 ],
+      [ 46800,  1 ],
+      [ 50400,  1 ],
+      [ 54000,  1 ],
+      [ 57600,  1 ],
+      [ 61200,  0 ],
+      [ 64800,  0 ],
+      [ 68400,  0 ],
+      [ 72000,  0 ],
+      [ 75600,  0 ],
+      [ 79200,  0 ],
+      [ 82800,  0 ]
+    ]
   },
   "n_children": {
     "values": [
-      { "time": 0, "value": 0 },
-      { "time": 3600, "value": 0 },
-      { "time": 7200, "value": 0 },
-      { "time": 10800, "value": 0 },
-      { "time": 14400, "value": 0 },
-      { "time": 18000, "value": 0 },
-      { "time": 21600, "value": 0 },
-      { "time": 25200, "value": 0 },
-      { "time": 28800, "value": 0 },
-      { "time": 32400, "value": 0 },
-      { "time": 36000, "value": 0 },
-      { "time": 39600, "value": 0 },
-      { "time": 43200, "value": 0 },
-      { "time": 46800, "value": 0 },
-      { "time": 50400, "value": 0 },
-      { "time": 54000, "value": 0 },
-      { "time": 57600, "value": 0 },
-      { "time": 61200, "value": 0 },
-      { "time": 64800, "value": 0 },
-      { "time": 68400, "value": 0 },
-      { "time": 72000, "value": 0 },
-      { "time": 75600, "value": 0 },
-      { "time": 79200, "value": 0 },
-      { "time": 82800, "value": 0 }
-    ],
-    "continuous": false
+      [0,       0],
+      [3600,    0],
+      [7200,    0],
+      [10800,   0],
+      [14400,   0],
+      [18000,   0],
+      [21600,   0],
+      [25200,   0],
+      [28800,   0],
+      [32400,   0],
+      [36000,   0],
+      [39600,   0],
+      [43200,   0],
+      [46800,   0],
+      [50400,   0],
+      [54000,   0],
+      [57600,   0],
+      [61200,   0],
+      [64800,   0],
+      [68400,   0],
+      [72000,   0],
+      [75600,   0],
+      [79200,   0],
+      [82800,   0],
+    ]
   }
 }
 '''
@@ -134,7 +128,7 @@ EXPLICIT_JSON = r'''
 
 class TestRoomChemistryFromJson(unittest.TestCase):
     def setUp(self):
-        self.room = RoomChemistryJSONBuilder.from_dict(json.loads(EXPLICIT_JSON))
+        self.room = RoomChemistryJSONBuilder.from_dict(pyjson5.loads(EXPLICIT_JSON))
 
     def test_basic_fields(self):
         self.assertAlmostEqual(self.room.volume_in_m3, 10.0)

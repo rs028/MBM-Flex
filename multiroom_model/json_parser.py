@@ -108,70 +108,61 @@ class RoomChemistryJSONBuilder:
             rooms_val = data["rooms"]
             return RoomChemistryJSONBuilder.parse_rooms_from_dict(rooms_val)
 
+        def safe_convert(key, room_obj):
+            try:
+                return RoomChemistryJSONBuilder._from_any(room_obj)
+            except ValueError as e:
+                raise ValueError(f"Error at room: '{key}': {e}") from e
+
         # If data is a list -> dict of room objects keyed on index
         if isinstance(data, list):
-            return dict((i, RoomChemistryJSONBuilder._from_any(room_obj)) for i, room_obj in enumerate(data))
+            return {i: safe_convert(i, room_obj) for i, room_obj in enumerate(data)}
 
         # If data is a dict -> dict of room objects
         elif isinstance(data, dict):
-            return dict((key, RoomChemistryJSONBuilder._from_any(room_obj)) for key, room_obj in data.items())
-
+            return {key: safe_convert(key, room_obj) for key, room_obj in data.items()}
         else:
             raise ValueError("'rooms' must be a list or a mapping")
 
-    @staticmethod
-    def build_wind_from_dict(data: Dict[str, Any]) -> WindDefinition:
-
-        try:
-            wind_speed = RoomChemistryJSONBuilder._make_time_dep(data["wind_speed"])
-            wind_direction = RoomChemistryJSONBuilder._make_time_dep(data["wind_direction"])
-        except KeyError as e:
-            raise ValueError(f"Missing required key for WindDefinition: {e}")
-
-        in_radians = bool(data.get("in_radians", True))
-        return WindDefinition(wind_speed, wind_direction, in_radians)
 
     @staticmethod
     def _normalize_time_value_list(obj: Any) -> list[tuple[float, float]]:
         if obj is None:
             return []
-        if isinstance(obj, dict):
-            if "values" in obj:
-                source = obj["values"]
-            else:
-                raise ValueError("time-dependent dict must include 'values' key")
-        else:
-            source = obj
-
-        if not isinstance(source, list):
-            raise ValueError("time-dependent 'values' must be a list")
+        if not isinstance(obj, list):
+            raise ValueError(f"time-dependent 'values' must be a list: {type(obj)}")
 
         out: list[tuple[float, float]] = []
-        for i, item in enumerate(source):
+        for i, item in enumerate(obj):
             if isinstance(item, (list, tuple)):
                 if len(item) != 2:
                     raise ValueError(f"time-value pair at index {i} must have length 2 (time, value) {item}")
                 t, v = item
-            elif isinstance(item, dict):
-                t = item.get("time", item.get("t"))
-                v = item.get("value", item.get("v"))
-                if t is None or v is None:
-                    raise ValueError(f"time/value missing in dict at index {i}")
             else:
                 raise ValueError(f"Unsupported time-value item type at index {i}: {type(item)}")
 
-            out.append((float(t), float(v)))
+            try:
+                out.append((float(t),float(v)))
+            except Exception as e:
+                raise ValueError(f"Invalid numeric time/value at index {i}: {e}")
         return out
 
     @staticmethod
     def _make_time_dep(obj: Any, default_continuous: bool = True) -> Optional[TimeDependentValue]:
         if obj is None:
             return None
-        continuous = bool(obj.get("continuous", default_continuous)) if isinstance(obj, dict) else default_continuous
-        tv_pairs = RoomChemistryJSONBuilder._normalize_time_value_list(obj)
+        if isinstance(obj, dict):
+            if "values" in obj:
+                source = obj["values"]
+            else:
+                raise ValueError("time dependent dict must include 'values' key")
+        else:
+            source = obj
+
+        tv_pairs = RoomChemistryJSONBuilder._normalize_time_value_list(source)
         if len(tv_pairs) == 0:
             raise ValueError("Time-dependent values list is empty")
-        return TimeDependentValue(tv_pairs, continuous)
+        return TimeDependentValue(tv_pairs, default_continuous)
 
     @staticmethod
     def _normalize_bracketed_list(obj: Any) -> List[Tuple[float, float, float]]:
@@ -197,22 +188,16 @@ class RoomChemistryJSONBuilder:
             elif isinstance(item, dict):
                 if "start" in item:
                     s = item["start"]
-                elif "s" in item:
-                    s = item["s"]
                 else:
-                    raise ValueError(f"bracket dict at index {i} missing 'start'/'s' key")
+                    raise ValueError(f"bracket dict at index {i} missing 'start' key")
                 if "end" in item:
                     e = item["end"]
-                elif "e" in item:
-                    e = item["e"]
                 else:
-                    raise ValueError(f"bracket dict at index {i} missing 'end'/'e' key")
+                    raise ValueError(f"bracket dict at index {i} missing 'end' key")
                 if "value" in item:
                     v = item["value"]
-                elif "v" in item:
-                    v = item["v"]
                 else:
-                    raise ValueError(f"bracket dict at index {i} missing 'value'/'v' key")
+                    raise ValueError(f"bracket dict at index {i} missing 'value' key")
             else:
                 raise ValueError(f"Unsupported bracketed item type at index {i}: {type(item)}")
 
@@ -225,11 +210,68 @@ class RoomChemistryJSONBuilder:
     @staticmethod
     def _make_bracketed(obj: Any) -> Optional[TimeBracketedValue]:
         if obj is None:
-            return None
+            return TimeBracketedValue([])
         triples = RoomChemistryJSONBuilder._normalize_bracketed_list(obj)
-        if len(triples) == 0:
-            raise ValueError("Bracketed values list is empty")
         return TimeBracketedValue(triples)
+
+
+class WindJsonBuilder:
+    """
+    Build WindDefinition objects from Python dictionary.
+    """
+
+    @staticmethod
+    def _normalize_wind_list(obj: Any) -> Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]:
+        if obj is None:
+            return [], []
+        if isinstance(obj, dict):
+            if "values" in obj:
+                source = obj["values"]
+            else:
+                raise ValueError("bracketed dict must include 'values' key")
+        else:
+            source = obj
+        if not isinstance(source, list):
+            raise ValueError("wind definition must be a list")
+
+        out: Tuple[List[Tuple[float, float]], List[Tuple[float, float]]] = [],[]
+        for i, item in enumerate(source):
+            if isinstance(item, (list, tuple)):
+                if len(item) != 3:
+                    raise ValueError(f"wind definition triple at index {i} must have length 3 (time, speed, direction)")
+                t, s, d = item
+            elif isinstance(item, dict):
+                if "time" in item:
+                    t = item["time"]
+                else:
+                    raise ValueError(f"wind definition at index {i} missing 'time' key")
+                if "speed" in item:
+                    s = item["speed"]
+                else:
+                    raise ValueError(f"wind definition at index {i} missing 'speed' key")
+                if "direction" in item:
+                    d = item["direction"]
+                else:
+                    raise ValueError(f"wind definition at index {i} missing 'direction' key")
+            else:
+                raise ValueError(f"Unsupported wind definition item type at index {i}: {type(item)}")
+
+            try:
+                out[0].append((float(t), float(s)))
+                out[1].append((float(t), float(d)))
+            except Exception as e:
+                raise ValueError(f"Invalid numeric start/end/value at index {i}: {e}")
+        return out
+    
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> WindDefinition:
+        try:
+            wind_speed , wind_direction = WindJsonBuilder._normalize_wind_list(data)
+        except KeyError as e:
+            raise ValueError(f"Missing required key for WindDefinition: {e}")
+
+        in_radians = bool(data.get("in_radians", True))
+        return WindDefinition(wind_speed, wind_direction, in_radians)
 
 
 class GlobalSettingsJSONBuilder:
@@ -366,7 +408,7 @@ class BuildingJSONParser:
         # Parse wind definition
         if "wind" not in data:
             raise ValueError("Missing 'wind' section in building JSON")
-        wind: WindDefinition = RoomChemistryJSONBuilder.build_wind_from_dict(data["wind"])
+        wind: WindDefinition = WindJsonBuilder.from_dict(data["wind"])
 
         # Parse global settings
         if "global_settings" not in data:
