@@ -11,7 +11,11 @@ from .global_settings import GlobalSettings
 from .wind_definition import WindDefinition
 import pandas as pd
 import numpy as np
-from multiprocess import Pool
+from multiprocess import Pool, cpu_count
+
+
+def yellow_text(str):
+    return f"\033[93m{str}\033[0m"
 
 
 class Simulation:
@@ -25,7 +29,7 @@ class Simulation:
                  rooms: List[RoomChemistry],
                  apertures: List[Aperture],
                  wind_definition: WindDefinition = None,
-                 processes: int = 4):
+                 cpu_count: int = cpu_count()):
         """
         @brief Initialize the Simulation with
         details about the building, rooms and apertures.
@@ -33,18 +37,18 @@ class Simulation:
         @param global_settings: Settings for the simulation which are independent of any one room or aperture.
         @param rooms: Information about the rooms.
         @param apertures: Information about the apertures.
-        @param processes: The number of processes to use when solving.
+        @param cpu_count: Cap on the number of processes to use when solving with multiprocess.
         """
 
         # Number of cores to use in multiprocessing
-        self._processes = processes
+        self._cpu_count = cpu_count
 
         self._global_settings = global_settings
         self._rooms = rooms
         self._apertures = apertures
         self._wind_definition = wind_definition
 
-        with Pool(self._processes) as pool:
+        with Pool(self._cpu_count) as pool:
 
             # For each room, build a room_evolver (performed in parallel)
             args = [(r, self._global_settings) for r in self._rooms]
@@ -68,7 +72,7 @@ class Simulation:
 
         t_final: float = t0+t_total
 
-        with Pool(self._processes) as pool:
+        with Pool(self._cpu_count) as pool:
 
             # First step
             # using the init_conditions, perform a solve on each room (performed in parallel)
@@ -118,7 +122,7 @@ class Simulation:
             wind_speed = self._wind_definition.wind_speed.value_at_time(time)
             wind_direction = self._wind_definition.wind_direction.value_at_time(time)
             wind_direction_in_radians = wind_direction if self._wind_definition.in_radians else math.radians(
-            wind_direction)
+                wind_direction)
             return wind_speed, wind_direction_in_radians
 
     def _apply_wind(self, pool, time, t_interval, room_results):
@@ -146,9 +150,17 @@ class Simulation:
         # Use the initial conditions (text or dataframe) to produce new room results using the room evolvers
         args = [(self._room_evolvers[i], t0, t_interval, initial_condition[i], txt_file) for i in range(len(self._rooms))]
         room_results = pool.starmap(self.run_room_evolver_starmap, args)
+        # Check that each room resulted in a result at the final time
+        # If a room failed to complete, then raise the exception
+        success = True
+        for i, r in enumerate(room_results):
+            if r.index[-1] != t0+t_interval:
+                success = False
+                print(yellow_text(f"Simulation incomplete for room {i}, only ran to time {r.index[-1]}, expected {t0+t_interval}"))
+        if not success:
+            raise Exception(f"Simulation incomplete")
         # This results in a new time which we have solved to
-        solved_time = min(r.index[-1] for r in room_results)
-        return room_results, solved_time
+        return room_results, t0+t_interval
 
     def trans_matrix(self, time: float):
         """
@@ -181,7 +193,7 @@ class Simulation:
         Applies the effect of the aperture results, to alter the state of the rooms
         Return the new room concentrations at the final time
         """
-        # Make a new result from the current result the the solved time
+        # Make a new result from the current result at the solved time
         result = [result.loc[[solved_time], :].astype(float) for result in room_results]
         # Go through all the aperture results
         for room_1_concentration_change, room_2_concentration_change, origin_index, destination_index in aperture_results:
@@ -194,6 +206,21 @@ class Simulation:
                 new_room_2_value = result[destination_index].loc[solved_time, :].add(
                     room_2_concentration_change, fill_value=0.0)
                 result[destination_index].loc[solved_time, :] = new_room_2_value
+
+        # TODO: Do something here about the risk of negative concentrations
+        # for example: `result = [r.clip(lower=0).fillna(0) for r in result]`
+
+        # If a room concentration fell below 0, print a warning
+        for i, r in enumerate(result):
+            solved_time_result = r.loc[solved_time, :]
+            negative_solved_time_result = solved_time_result[solved_time_result < 0]
+            negative_species = negative_solved_time_result.index.tolist()
+            if negative_species:
+                species_str = ", ".join(negative_species)
+                print(
+                    yellow_text(f"Warning: Aperture effects resulted in a negative concentration in room {i} at time {solved_time}. Species: {species_str}")
+                )
+
         # return the augmented results
         return result
 
@@ -219,7 +246,7 @@ class Simulation:
     @staticmethod
     def build_aperture_calculator_starmap(aperture, transport_paths, apertures, rooms, global_settings):
         """
-        Create one ApertureCalculation and the accompanying data to use it 
+        Create one ApertureCalculation and the accompanying data to use it
         """
         origin_index = rooms.index(aperture.origin)
         destination_index = None if type(aperture.destination) == Side else rooms.index(aperture.destination)
