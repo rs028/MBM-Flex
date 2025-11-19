@@ -68,9 +68,6 @@ if __name__ == '__main__':
     # We dont need the keys of the rooms anymore now we have populated them
     rooms = list(rooms_dictionary.values())
 
-    # Define some windows
-    windows = []
-
     # Build the simulation class
     # This step will build jacobeans for each of the rooms in preparation for running later
     simulation = Simulation(
