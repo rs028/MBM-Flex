@@ -412,8 +412,9 @@ class BuildingJSONParser:
 
         # Parse global settings
         if "global_settings" not in data:
-            raise ValueError("Missing 'global_settings' section in building JSON")
-        global_settings: GlobalSettings = GlobalSettingsJSONBuilder.from_dict(data["global_settings"])
+            global_settings: GlobalSettings = GlobalSettingsJSONBuilder.from_dict({})
+        else:
+            global_settings: GlobalSettings = GlobalSettingsJSONBuilder.from_dict(data["global_settings"])
 
         # Parse apertures (needs rooms)
         if "apertures" not in data:
@@ -421,11 +422,18 @@ class BuildingJSONParser:
         else:
             apertures: List[Aperture] = ApertureJSONBuilder.from_dict(data["apertures"], rooms)
 
+        # Parse initial conditions (needs rooms)
+        if "initial_conditions" not in data:
+            initial_conditions: Dict[RoomChemistry, str] = {}
+        else:
+            initial_conditions: Dict[RoomChemistry, str] = {rooms[key]: string for key, string in data["initial_conditions"].items()}
+
         return {
             "rooms": rooms,
             "wind": wind,
             "global_settings": global_settings,
-            "apertures": apertures
+            "apertures": apertures,
+            "initial_conditions": initial_conditions
         }
 
     @staticmethod
