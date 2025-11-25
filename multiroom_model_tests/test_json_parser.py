@@ -116,7 +116,7 @@ class TestJSONAllInOne(BaseTestJSON):
 
 
 class TestJSONReferencingRoomFiles(BaseTestJSON):
-    results = BuildingJSONParser.from_json_file("config_rooms/json/building_ref_roomfiles.json")
+    results = BuildingJSONParser.from_json_file("config_rooms/json/building.json")
 
 
 class TestJSONWithRoomFiles(BaseTestJSON):

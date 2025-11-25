@@ -156,18 +156,18 @@ class TestRoomChemistryFromJson(unittest.TestCase):
         self.assertIsInstance(self.room.temp_in_kelvin, TimeDependentValue)
         times = self.room.temp_in_kelvin.times()
         vals = self.room.temp_in_kelvin.values()
-        self.assertEqual(len(times), 3)
-        self.assertEqual(len(vals), 3)
+        self.assertEqual(len(times), 4)
+        self.assertEqual(len(vals), 4)
         self.assertAlmostEqual(times[0], 0.0)
         self.assertAlmostEqual(vals[0], 288.15)
 
         self.assertIsNotNone(self.room.rh_in_percent)
         self.assertIsInstance(self.room.rh_in_percent, TimeDependentValue)
-        self.assertEqual(len(self.room.rh_in_percent.times()), 3)
+        self.assertEqual(len(self.room.rh_in_percent.times()), 4)
 
         self.assertIsNotNone(self.room.airchange_in_per_second)
         self.assertIsInstance(self.room.airchange_in_per_second, TimeDependentValue)
-        self.assertEqual(len(self.room.airchange_in_per_second.times()), 2)
+        self.assertEqual(len(self.room.airchange_in_per_second.times()), 4)
 
         self.assertIsNotNone(self.room.light_switch)
         self.assertIsInstance(self.room.light_switch, TimeDependentValue)

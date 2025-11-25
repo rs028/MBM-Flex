@@ -1,18 +1,9 @@
 import math
 import pickle
+from typing import Dict, List
 from multiroom_model.global_settings import GlobalSettings
-from multiroom_model.simulation import Simulation
-from multiroom_model.room_factory import (
-    build_rooms,
-    populate_room_with_emissions_file,
-    populate_room_with_tvar_file,
-    populate_room_with_expos_file
-)
-from multiroom_model.aperture_factory import (
-    build_apertures,
-    build_apertures_from_double_definition,
-    build_wind_definition
-)
+from multiroom_model.simulation import Simulation, RoomChemistry, Aperture, WindDefinition
+from multiroom_model.json_parser import BuildingJSONParser
 
 # Define some global settings which are true for the whole building
 if __name__ == '__main__':
@@ -21,7 +12,6 @@ if __name__ == '__main__':
     ambient_temp = 293.0     # ambient temperature (K) is assumed to be constant
     # ambient air density (assuming dry air), in kg/m3
     rho = (100*ambient_press) / (287.050 * ambient_temp)
-
 
     global_settings = GlobalSettings(
         filename='chem_mech/mcm_subset.fac',
@@ -46,27 +36,20 @@ if __name__ == '__main__':
         downwind_pressure_coefficient=-0.2
     )
 
-    # Construct the rooms
-    # This is using the CSV file, but other methods could be employed
+    # Read the json file for the room and extract all the data we need from it
+    input_data = BuildingJSONParser.from_json_file("config_rooms/json/building.json")
 
-    rooms_dictionary = build_rooms("config_rooms/mr_tcon_room_params.csv")
+    # the rooms
+    rooms_dictionary: Dict[str,RoomChemistry] = input_data["rooms"]
 
-    # Populate each of the rooms with additional information from supplementary csv files
+    # the apertures
+    apertures: List[Aperture] = input_data['apertures']
 
-    for i, room in rooms_dictionary.items():
-        populate_room_with_emissions_file(room, f"config_rooms/mr_room_emis_params_{i}.csv")
-        populate_room_with_tvar_file(room, f"config_rooms/mr_tvar_room_params_{i}.csv")
-        populate_room_with_expos_file(room, f"config_rooms/mr_tvar_expos_params_{i}.csv")
-
-    # Populate the apertures,
-    # uses the "double definition" method because we expect each aperture will appear twice in the csv file.
-    apertures = build_apertures_from_double_definition("config_rooms/mr_tcon_building.csv", rooms_dictionary)
-
-    # Populate the definition of the wind
-    wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv", in_radians=False)
+    # the definition of the wind
+    wind_definition: WindDefinition = input_data['wind']
 
     # We dont need the keys of the rooms anymore now we have populated them
-    rooms = list(rooms_dictionary.values())
+    rooms: List[RoomChemistry] = list(rooms_dictionary.values())
 
     # Build the simulation class
     # This step will build jacobeans for each of the rooms in preparation for running later
@@ -76,9 +59,8 @@ if __name__ == '__main__':
         apertures=apertures,
         wind_definition=wind_definition)
 
-    # Select an initial conditions text file for each room
-    # This lines uses the same file for all the rooms, but this could be different for the different rooms
-    initial_conditions = dict((r, 'initial_concentrations.txt') for r in rooms)
+    # an initial conditions text file for each room
+    initial_conditions = input_data['initial_conditions']
 
     # Run the simulation starting at time t0
     # Run for a duration of t_total seconds
@@ -92,16 +74,15 @@ if __name__ == '__main__':
 
     # Save to pickle file
 
-    results_as_dictionary = dict((f"Room {i+1}", result[r]) for i, r in enumerate(rooms))
+    results_dictionary = dict((key, result[r]) for key, r in rooms_dictionary.items())
 
-    pickle.dump(results_as_dictionary, open("./results.pkl", "wb"))
+    pickle.dump(results_dictionary, open("./results.pkl", "wb"))
 
     # Make use of results here eg
     # plot tool
 
     # Demo: Print one of the many results to the output
-    room_of_interest = rooms_dictionary[1]
     species_of_interest = "CO"
     time_of_interest = 9
 
-    print(f"\n\nCO concentration in room 1 after 9 seconds = {result[room_of_interest][species_of_interest][time_of_interest]}")
+    print(f"\n\nCO concentration in room 1 after 9 seconds = {results_dictionary['room 1'][species_of_interest][time_of_interest]}")

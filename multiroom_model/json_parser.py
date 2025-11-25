@@ -148,6 +148,48 @@ class RoomChemistryJSONBuilder:
         return out
 
     @staticmethod
+    def ensure_min_four_points(tv_pairs):
+        """
+        Ensures tv_pairs contains at least 4 (t, v) tuples.
+        - If 2 points: generate 4 evenly spaced points.
+        - If 3 points: insert one interpolated point between the largest gap.
+        - If 4+ points: return unchanged.
+        """
+
+        n = len(tv_pairs)
+
+        if n == 2:
+            # generate 4 uniformly 
+            (t0, v0), (t1, v1) = tv_pairs
+            ts = [t0 + (t1 - t0) * i / 3 for i in range(4)]
+            vs = [v0 + (v1 - v0) * i / 3 for i in range(4)]
+            
+            return list(zip(ts, vs))
+
+        elif n == 3:
+            # add 1 point in the biggest gap
+
+            # compute distances between consecutive points
+            gaps = [
+                (abs(tv_pairs[i+1][0] - tv_pairs[i][0]), i)
+                for i in range(2)
+            ]
+
+            # pick the gap with the largest t-distance
+            _, idx = max(gaps)
+
+            #create a new midpoint
+            (t0, v0) = tv_pairs[idx]
+            (t1, v1) = tv_pairs[idx + 1]
+            midpoint = ((t0 + t1) / 2.0, (v0 + v1) / 2.0)
+
+            # insert midpoint
+            return tv_pairs[:idx+1] + [midpoint] + tv_pairs[idx+1:]
+        
+        else:
+            return tv_pairs
+
+    @staticmethod
     def _make_time_dep(obj: Any, default_continuous: bool = True) -> Optional[TimeDependentValue]:
         if obj is None:
             return None
@@ -160,8 +202,11 @@ class RoomChemistryJSONBuilder:
             source = obj
 
         tv_pairs = RoomChemistryJSONBuilder._normalize_time_value_list(source)
-        if len(tv_pairs) == 0:
-            raise ValueError("Time-dependent values list is empty")
+        if len(tv_pairs) <2:
+            raise ValueError("Time-dependent values list does not have 2 points")
+        if default_continuous:
+            # In continuous cases, we need at least 4 points for some spline fits
+            tv_pairs = RoomChemistryJSONBuilder.ensure_min_four_points(tv_pairs)
         return TimeDependentValue(tv_pairs, default_continuous)
 
     @staticmethod
@@ -221,7 +266,7 @@ class WindJsonBuilder:
     """
 
     @staticmethod
-    def _normalize_wind_list(obj: Any) -> Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]:
+    def _normalize_wind_list(obj: Any) -> Tuple[TimeDependentValue, TimeDependentValue]:
         if obj is None:
             return [], []
         if isinstance(obj, dict):
@@ -261,7 +306,7 @@ class WindJsonBuilder:
                 out[1].append((float(t), float(d)))
             except Exception as e:
                 raise ValueError(f"Invalid numeric start/end/value at index {i}: {e}")
-        return out
+        return TimeDependentValue(out[0], True), TimeDependentValue(out[1], True)
     
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> WindDefinition:
