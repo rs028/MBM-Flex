@@ -19,15 +19,15 @@ class TestTransMatrix(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.rooms = build_rooms("config_rooms/mr_tcon_room_params.csv")
+        cls.rooms = build_rooms("config_rooms/csv/mr_tcon_room_params.csv")
 
         for i, room in cls.rooms.items():
-            populate_room_with_emissions_file(room, f"config_rooms/mr_room_emis_params_{i}.csv")
-            populate_room_with_tvar_file(room, f"config_rooms/mr_tvar_room_params_{i}.csv")
-            populate_room_with_expos_file(room, f"config_rooms/mr_tvar_expos_params_{i}.csv")
+            populate_room_with_emissions_file(room, f"config_rooms/csv/mr_room_emis_params_{i}.csv")
+            populate_room_with_tvar_file(room, f"config_rooms/csv/mr_tvar_room_params_{i}.csv")
+            populate_room_with_expos_file(room, f"config_rooms/csv/mr_tvar_expos_params_{i}.csv")
 
-        cls.apertures = build_apertures_from_double_definition("config_rooms/mr_tcon_building.csv", cls.rooms)
-        cls.wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv")
+        cls.apertures = build_apertures_from_double_definition("config_rooms/csv/mr_tcon_building.csv", cls.rooms)
+        cls.wind_definition = build_wind_definition("config_rooms/csv/mr_tvar_wind_params.csv")
         cls.rooms = list(cls.rooms.values())
 
         ambient_press = 1013.0   # ambient pressure (mbar) is assumed to be constant, and is the same in all rooms

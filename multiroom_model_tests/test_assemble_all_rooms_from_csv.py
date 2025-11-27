@@ -28,12 +28,12 @@ class CustomEncoder(json.JSONEncoder):
 class TestAssembleAllRoomsFromCSV(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.rooms = build_rooms("config_rooms/mr_tcon_room_params.csv")
+        cls.rooms = build_rooms("config_rooms/csv/mr_tcon_room_params.csv")
         cls.room_ids = list(cls.rooms.keys())
         for i, room in cls.rooms.items():
-            populate_room_with_emissions_file(room, f"config_rooms/mr_room_emis_params_{i}.csv")
-            populate_room_with_tvar_file(room, f"config_rooms/mr_tvar_room_params_{i}.csv")
-            populate_room_with_expos_file(room, f"config_rooms/mr_tvar_expos_params_{i}.csv")
+            populate_room_with_emissions_file(room, f"config_rooms/csv/mr_room_emis_params_{i}.csv")
+            populate_room_with_tvar_file(room, f"config_rooms/csv/mr_tvar_room_params_{i}.csv")
+            populate_room_with_expos_file(room, f"config_rooms/csv/mr_tvar_expos_params_{i}.csv")
 
     def test_number_of_rooms(self):
         self.assertEqual(len(self.rooms), 9, "Expected 9 rooms")

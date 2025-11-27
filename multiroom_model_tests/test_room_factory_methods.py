@@ -14,7 +14,7 @@ from multiroom_model.room_factory import (
 class TestRoomPopulationIntegration(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.rooms = build_rooms("config_rooms/mr_tcon_room_params.csv")
+        cls.rooms = build_rooms("config_rooms/csv/mr_tcon_room_params.csv")
         cls.room_ids = list(cls.rooms.keys())
 
     def test_number_of_rooms(self):
@@ -78,7 +78,7 @@ class TestRoomPopulationIntegration(unittest.TestCase):
 
     def test_populate_emissions(self):
         for room in self.rooms.values():
-            populate_room_with_emissions_file(room, "config_rooms/mr_room_emis_params_1.csv")
+            populate_room_with_emissions_file(room, "config_rooms/csv/mr_room_emis_params_1.csv")
             self.assertTrue(hasattr(room, 'emissions'))
             self.assertEqual(len(room.emissions), 2)
             self.assertTrue("LIMONENE" in room.emissions)
@@ -101,7 +101,7 @@ class TestRoomPopulationIntegration(unittest.TestCase):
 
     def test_populate_tvar(self):
         for room in self.rooms.values():
-            populate_room_with_tvar_file(room, "config_rooms/mr_tvar_room_params_1.csv")
+            populate_room_with_tvar_file(room, "config_rooms/csv/mr_tvar_room_params_1.csv")
             self.assertIsInstance(room.temp_in_kelvin, TimeDependentValue)
             self.assertEqual(len(room.temp_in_kelvin.times()), 24 )
             self.assertIsInstance(room.rh_in_percent, TimeDependentValue)
@@ -113,7 +113,7 @@ class TestRoomPopulationIntegration(unittest.TestCase):
 
     def test_populate_expos(self):
         for room in self.rooms.values():
-            populate_room_with_expos_file(room, "config_rooms/mr_tvar_expos_params_1.csv")
+            populate_room_with_expos_file(room, "config_rooms/csv/mr_tvar_expos_params_1.csv")
             self.assertIsInstance(room.n_adults, TimeDependentValue)
             self.assertEqual(len(room.n_adults.times()), 24 )
             self.assertIsInstance(room.n_children, TimeDependentValue)
