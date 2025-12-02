@@ -37,7 +37,7 @@ if __name__ == '__main__':
     )
 
     # Read the json file for the room and extract all the data we need from it
-    input_data = BuildingJSONParser.from_json_file("config_rooms/json/building.json")
+    input_data = BuildingJSONParser.from_json_file("config_rooms/building.json")
 
     # the rooms
     rooms_dictionary: Dict[str,RoomChemistry] = input_data["rooms"]

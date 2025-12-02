@@ -12,7 +12,7 @@ class TestBuildingSimulation(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        building = BuildingJSONParser.from_json_file("config_rooms/json/building.json")
+        building = BuildingJSONParser.from_json_file("config_rooms/building.json")
         cls.rooms = list(building['rooms'].values())
         cls.apertures = building['apertures']
         cls.wind_definition = building['wind']

@@ -14,7 +14,7 @@ class TestApertureFlowCalculations(unittest.TestCase):
 
     @classmethod
     def generate_a_dataframe(cls):
-        rooms = BuildingJSONParser.from_json_file("config_rooms/json/building.json")['rooms']
+        rooms = BuildingJSONParser.from_json_file("config_rooms/building.json")['rooms']
         global_settings = GlobalSettings(
             filename='chem_mech/mcm_subset.fac',
             INCHEM_additional=False,
