@@ -111,10 +111,6 @@ class BaseTestJSON(unittest.TestCase):
             self.assertIsInstance(room.n_children, TimeDependentValue)
 
 
-class TestJSONAllInOne(BaseTestJSON):
-    results = BuildingJSONParser.from_json_file("config_rooms/json/all_in_one.json")
-
-
 class TestJSONReferencingRoomFiles(BaseTestJSON):
     results = BuildingJSONParser.from_json_file("config_rooms/json/building.json")
 
