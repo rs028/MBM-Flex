@@ -1,25 +1,17 @@
 import pickle
 import unittest
 from multiroom_model.global_settings import GlobalSettings
+from multiroom_model.json_parser import BuildingJSONParser
 from multiroom_model.simulation import Simulation
-from multiroom_model.room_factory import (
-    build_rooms,
-    populate_room_with_emissions_file,
-    populate_room_with_tvar_file,
-    populate_room_with_expos_file
-)
 
 
 class TestTwoRoomSimulation(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        rooms = build_rooms("config_rooms/csv/mr_tcon_room_params.csv")
 
-        for i, room in rooms.items():
-            populate_room_with_emissions_file(room, f"config_rooms/csv/mr_room_emis_params_{i}.csv")
-            populate_room_with_tvar_file(room, f"config_rooms/csv/mr_tvar_room_params_{i}.csv")
-            populate_room_with_expos_file(room, f"config_rooms/csv/mr_tvar_expos_params_{i}.csv")
-            
+        building = BuildingJSONParser.from_json_file("config_rooms/json/building.json")
+        rooms = list(building['rooms'].values())
+
         # keep only 2 rooms
         print(rooms)
         cls.rooms = [rooms[2], rooms[4]]

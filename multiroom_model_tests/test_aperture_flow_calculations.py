@@ -4,15 +4,9 @@ from unittest.mock import Mock, patch
 
 from multiroom_model.aperture_calculations import Fluxes
 from multiroom_model.global_settings import GlobalSettings
+from multiroom_model.json_parser import BuildingJSONParser
 from multiroom_model.room_chemistry import RoomChemistry
 from multiroom_model.room_inchempy_evolver import RoomInchemPyEvolver
-from multiroom_model.room_factory import (
-    build_rooms,
-    populate_room_with_emissions_file,
-    populate_room_with_tvar_file,
-    populate_room_with_expos_file
-)
-
 from multiroom_model.aperture_flow_calculations import ApertureFlowCalculator
 
 
@@ -20,12 +14,7 @@ class TestApertureFlowCalculations(unittest.TestCase):
 
     @classmethod
     def generate_a_dataframe(cls):
-        rooms = build_rooms("config_rooms/csv/mr_tcon_room_params.csv")
-        room_ids = list(rooms.keys())
-        for i, room in rooms.items():
-            populate_room_with_emissions_file(room, f"config_rooms/csv/mr_room_emis_params_{i}.csv")
-            populate_room_with_tvar_file(room, f"config_rooms/csv/mr_tvar_room_params_{i}.csv")
-            populate_room_with_expos_file(room, f"config_rooms/csv/mr_tvar_expos_params_{i}.csv")
+        rooms = BuildingJSONParser.from_json_file("config_rooms/json/building.json")['rooms']
         global_settings = GlobalSettings(
             filename='chem_mech/mcm_subset.fac',
             INCHEM_additional=False,
@@ -44,7 +33,7 @@ class TestApertureFlowCalculations(unittest.TestCase):
             path=None,
             reactions_output=False
         )
-        room: RoomChemistry = rooms[2]
+        room: RoomChemistry = rooms['room 2']
 
         evolver = RoomInchemPyEvolver(room, global_settings)
 

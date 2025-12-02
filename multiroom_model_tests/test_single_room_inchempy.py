@@ -1,26 +1,18 @@
 import unittest
 from multiroom_model.global_settings import GlobalSettings
+from multiroom_model.json_parser import BuildingJSONParser
 from multiroom_model.room_chemistry import RoomChemistry
 from multiroom_model.inchem import generate_main_class, run_main_class
 from multiroom_model.room_inchempy_evolver import interpret_light_on_times
-from multiroom_model.room_factory import (
-    build_rooms,
-    populate_room_with_emissions_file,
-    populate_room_with_tvar_file,
-    populate_room_with_expos_file
-)
-
 
 
 class TestAssembleAllRoomsFromCSV(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.rooms = build_rooms("config_rooms/csv/mr_tcon_room_params.csv")
-        cls.room_ids = list(cls.rooms.keys())
-        for i, room in cls.rooms.items():
-            populate_room_with_emissions_file(room, f"config_rooms/csv/mr_room_emis_params_{i}.csv")
-            populate_room_with_tvar_file(room, f"config_rooms/csv/mr_tvar_room_params_{i}.csv")
-            populate_room_with_expos_file(room, f"config_rooms/csv/mr_tvar_expos_params_{i}.csv")
+
+        building = BuildingJSONParser.from_json_file("config_rooms/json/building.json")
+        cls.rooms = list(building['rooms'].values())
+
         cls.global_settings = GlobalSettings(
             filename='chem_mech/mcm_subset.fac',
             INCHEM_additional=False,
@@ -45,7 +37,7 @@ class TestAssembleAllRoomsFromCSV(unittest.TestCase):
 
         timed_emissions = hasattr(room, "emissions")
         if timed_emissions:
-            timed_inputs = {k: v.values() for k, v in room.emissions.items()} 
+            timed_inputs = {k: v.values() for k, v in room.emissions.items()}
         else:
             timed_inputs = None
 
