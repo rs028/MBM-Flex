@@ -1,13 +1,7 @@
 import unittest
 import math
-from multiroom_model.aperture_factory import build_apertures_from_double_definition, build_wind_definition
+from multiroom_model.json_parser import BuildingJSONParser
 from multiroom_model.transport_paths import paths_through_building
-from multiroom_model.room_factory import (
-    build_rooms,
-    populate_room_with_emissions_file,
-    populate_room_with_tvar_file,
-    populate_room_with_expos_file
-)
 from multiroom_model.aperture_calculations import ApertureCalculation, Side
 from multiroom_model.simulation import Simulation
 from multiroom_model.global_settings import GlobalSettings
@@ -17,21 +11,16 @@ class TestBuildingSimulation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.rooms = build_rooms("config_rooms/csv/mr_tcon_room_params.csv")
 
-        for i, room in cls.rooms.items():
-            populate_room_with_emissions_file(room, f"config_rooms/csv/mr_room_emis_params_{i}.csv")
-            populate_room_with_tvar_file(room, f"config_rooms/csv/mr_tvar_room_params_{i}.csv")
-            populate_room_with_expos_file(room, f"config_rooms/csv/mr_tvar_expos_params_{i}.csv")
-
-        cls.apertures = build_apertures_from_double_definition("config_rooms/csv/mr_tcon_building.csv", cls.rooms)
-        cls.wind_definition = build_wind_definition("config_rooms/csv/mr_tvar_wind_params.csv")
-        cls.rooms = list(cls.rooms.values())
+        building = BuildingJSONParser.from_json_file("config_rooms/building.json")
+        cls.rooms = list(building['rooms'].values())
+        cls.apertures = building['apertures']
+        cls.wind_definition = building['wind']
 
         ambient_press = 1013.0   # ambient pressure (mbar) is assumed to be constant, and is the same in all rooms
         ambient_temp = 293.0     # ambient temperature (K) is assumed to be constant
-        
-        rho = (100*ambient_press) / (287.050 * ambient_temp) # ambient air density (assuming dry air), in kg/m3
+
+        rho = (100*ambient_press) / (287.050 * ambient_temp)  # ambient air density (assuming dry air), in kg/m3
 
         cls.global_settings = GlobalSettings(
             filename='chem_mech/mcm_subset.fac',
@@ -105,9 +94,8 @@ class TestBuildingSimulation(unittest.TestCase):
             self.assertEqual(calculator.trans_matrix_contributions(1, 0).from_2_to_1,
                              sim_calc.trans_matrix_contributions(1, 0).from_2_to_1)
 
-
     def test_running(self):
-        
+
         initial_conditions = dict([(r, 'initial_concentrations.txt') for r in self.rooms])
 
         result = self.simulation.run(

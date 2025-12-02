@@ -112,19 +112,19 @@ class BaseTestJSON(unittest.TestCase):
 
 
 class TestJSONReferencingRoomFiles(BaseTestJSON):
-    results = BuildingJSONParser.from_json_file("config_rooms/json/building.json")
+    results = BuildingJSONParser.from_json_file("config_rooms/building.json")
 
 
 class TestJSONWithRoomFiles(BaseTestJSON):
     rooms_files = {
-        "room 1": "config_rooms/json/room_1.json",
-        "room 2": "config_rooms/json/room_2.json",
-        "room 3": "config_rooms/json/room_3.json",
-        "room 4": "config_rooms/json/room_4.json",
-        "room 5": "config_rooms/json/room_5.json",
-        "room 6": "config_rooms/json/room_6.json",
-        "room 7": "config_rooms/json/room_7.json",
-        "room 8": "config_rooms/json/room_8.json",
-        "room 9": "config_rooms/json/room_9.json",
+        "room 1": "config_rooms/room_1.json",
+        "room 2": "config_rooms/room_2.json",
+        "room 3": "config_rooms/room_3.json",
+        "room 4": "config_rooms/room_4.json",
+        "room 5": "config_rooms/room_5.json",
+        "room 6": "config_rooms/room_6.json",
+        "room 7": "config_rooms/room_7.json",
+        "room 8": "config_rooms/room_8.json",
+        "room 9": "config_rooms/room_9.json",
     }
-    results = BuildingJSONParser.from_json_files("config_rooms/json/building.json", rooms_files)
+    results = BuildingJSONParser.from_json_files("config_rooms/building.json", rooms_files)

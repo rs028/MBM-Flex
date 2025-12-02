@@ -3,7 +3,6 @@ from enum import Enum
 
 Room = TypeVar('Room')
 
-
 class Side(Enum):
     """
         @brief A side of of the building or a side of a room on which an aperture is situated.
