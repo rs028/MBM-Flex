@@ -20,12 +20,12 @@ class TestApertureFlowCalculations(unittest.TestCase):
 
     @classmethod
     def generate_a_dataframe(cls):
-        rooms = build_rooms("config_rooms/mr_tcon_room_params.csv")
+        rooms = build_rooms("config_rooms/csv/mr_tcon_room_params.csv")
         room_ids = list(rooms.keys())
         for i, room in rooms.items():
-            populate_room_with_emissions_file(room, f"config_rooms/mr_room_emis_params_{i}.csv")
-            populate_room_with_tvar_file(room, f"config_rooms/mr_tvar_room_params_{i}.csv")
-            populate_room_with_expos_file(room, f"config_rooms/mr_tvar_expos_params_{i}.csv")
+            populate_room_with_emissions_file(room, f"config_rooms/csv/mr_room_emis_params_{i}.csv")
+            populate_room_with_tvar_file(room, f"config_rooms/csv/mr_tvar_room_params_{i}.csv")
+            populate_room_with_expos_file(room, f"config_rooms/csv/mr_tvar_expos_params_{i}.csv")
         global_settings = GlobalSettings(
             filename='chem_mech/mcm_subset.fac',
             INCHEM_additional=False,

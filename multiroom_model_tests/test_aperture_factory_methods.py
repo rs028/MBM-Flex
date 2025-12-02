@@ -12,7 +12,7 @@ class TestAperturePopulation(unittest.TestCase):
 
     def test_build_apertures(self):
         rooms = dict((i, MockRoom()) for i in range(1, 10))
-        apertures = build_apertures("config_rooms/mr_tcon_building.csv", rooms)
+        apertures = build_apertures("config_rooms/csv/mr_tcon_building.csv", rooms)
         self.assertEqual(len(apertures), 25, "Expected 25 apertures")
 
         self.assertEqual(apertures[0].origin, rooms[1])
@@ -34,7 +34,7 @@ class TestAperturePopulation(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.rooms = dict((i, MockRoom()) for i in range(1, 10))
-        cls.apertures = build_apertures_from_double_definition("config_rooms/mr_tcon_building.csv", cls.rooms)
+        cls.apertures = build_apertures_from_double_definition("config_rooms/csv/mr_tcon_building.csv", cls.rooms)
 
     def test_number_of_apertures(self):
         self.assertEqual(len(self.apertures), 18, "Expected 18 apertures")
@@ -56,7 +56,7 @@ class TestAperturePopulation(unittest.TestCase):
 class TestWindDefinitionPopulation(unittest.TestCase):
 
     def test_times(self):
-        wind_definition = build_wind_definition("config_rooms/mr_tvar_wind_params.csv")
+        wind_definition = build_wind_definition("config_rooms/csv/mr_tvar_wind_params.csv")
         self.assertIsInstance(wind_definition.wind_speed, TimeDependentValue)
         self.assertEqual(len(wind_definition.wind_speed.times()), 24)
         self.assertIsInstance(wind_definition.wind_direction, TimeDependentValue)

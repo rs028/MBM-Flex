@@ -13,12 +13,12 @@ from multiroom_model.room_factory import (
 class TestTwoRoomSimulation(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        rooms = build_rooms("config_rooms/mr_tcon_room_params.csv")
+        rooms = build_rooms("config_rooms/csv/mr_tcon_room_params.csv")
 
         for i, room in rooms.items():
-            populate_room_with_emissions_file(room, f"config_rooms/mr_room_emis_params_{i}.csv")
-            populate_room_with_tvar_file(room, f"config_rooms/mr_tvar_room_params_{i}.csv")
-            populate_room_with_expos_file(room, f"config_rooms/mr_tvar_expos_params_{i}.csv")
+            populate_room_with_emissions_file(room, f"config_rooms/csv/mr_room_emis_params_{i}.csv")
+            populate_room_with_tvar_file(room, f"config_rooms/csv/mr_tvar_room_params_{i}.csv")
+            populate_room_with_expos_file(room, f"config_rooms/csv/mr_tvar_expos_params_{i}.csv")
 
         cls.rooms = rooms.values()
 
@@ -47,7 +47,7 @@ class TestTwoRoomSimulation(unittest.TestCase):
         simulation = Simulation(
             global_settings=self.global_settings,
             rooms=rooms,
-            windows=[])
+            apertures=[])
 
         initial_conditions = dict([(r, 'initial_concentrations.txt') for r in rooms])
 
@@ -81,7 +81,7 @@ class TestTwoRoomSimulation(unittest.TestCase):
         simulation = Simulation(
             global_settings=self.global_settings,
             rooms=rooms,
-            windows=[])
+            apertures=[])
 
         initial_conditions = dict([(r, 'initial_concentrations.txt') for r in rooms])
 

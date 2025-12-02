@@ -1,24 +1,26 @@
 import unittest
-from multiroom_model.surface_composition import SurfaceComposition
+
+from multiroom_model.json_parser import BuildingJSONParser, RoomChemistryJSONBuilder
 from multiroom_model.room_chemistry import RoomChemistry
 from multiroom_model.time_dep_value import TimeDependentValue
 from multiroom_model.bracketed_value import TimeBracketedValue
-from multiroom_model.room_factory import (
-    build_rooms,
-    populate_room_with_emissions_file,
-    populate_room_with_tvar_file,
-    populate_room_with_expos_file
-)
+from multiroom_model.surface_composition import SurfaceComposition
 
 
-class TestRoomPopulationIntegration(unittest.TestCase):
+class BaseTestJSON(unittest.TestCase):
+    results = None
+
     @classmethod
     def setUpClass(cls):
-        cls.rooms = build_rooms("config_rooms/csv/mr_tcon_room_params.csv")
-        cls.room_ids = list(cls.rooms.keys())
+        if cls is BaseTestJSON:
+            raise unittest.SkipTest("Base class — skipping")
+        cls.rooms = cls.results["rooms"]
 
     def test_number_of_rooms(self):
-        self.assertEqual(len(self.rooms), 9, "Expected 9 rooms")
+        self.assertEqual(len(self.results["rooms"]), 9, "Expected 9 rooms")
+
+    def test_number_of_apertures(self):
+        self.assertEqual(len(self.results["apertures"]), 18, "Expected 18 apertures")
 
     def test_room_basic_fields(self):
         for room_id, room in self.rooms.items():
@@ -43,9 +45,9 @@ class TestRoomPopulationIntegration(unittest.TestCase):
                 self.assertAlmostEqual(total, 100.0, delta=1.0, msg=f"Room {room_id} has bad composition sum: {total}%")
 
     def test_edge_case_compositions(self):
-        room5 = self.rooms[5]
-        room7 = self.rooms[7]
-        room8 = self.rooms[8]
+        room5 = self.rooms["room 5"]
+        room7 = self.rooms["room 7"]
+        room8 = self.rooms["room 8"]
 
         self.assertEqual(room5.composition.soft, 0)
         self.assertEqual(room5.composition.other, 0)
@@ -55,30 +57,27 @@ class TestRoomPopulationIntegration(unittest.TestCase):
 
     def test_rooms_exact_values(self):
         expected_data = {
-            1: {"volume_in_m3": 10, "surf_area_in_m2": 29.7, "light_type": "Incand", "glass_type": "glass_C"},
-            2: {"volume_in_m3": 37.5, "surf_area_in_m2": 81, "light_type": "LED", "glass_type": "no_sunlight"},
-            3: {"volume_in_m3": 32.4, "surf_area_in_m2": 61.8, "light_type": "UFT", "glass_type": "low_emissivity"},
-            4: {"volume_in_m3": 40.5, "surf_area_in_m2": 81.3, "light_type": "CFT", "glass_type": "low_emissivity_film"},
-            5: {"volume_in_m3": 24.5, "surf_area_in_m2": 51.1, "light_type": "FT", "glass_type": "no_sunlight"},
-            6: {"volume_in_m3": 31.6, "surf_area_in_m2": 98.3, "light_type": "CFL", "glass_type": "low_emissivity"},
-            7: {"volume_in_m3": 22.5, "surf_area_in_m2": 48, "light_type": "Incand", "glass_type": "low_emissivity_film"},
-            8: {"volume_in_m3": 50.4, "surf_area_in_m2": 86.4, "light_type": "UFT", "glass_type": "glass_C"},
-            9: {"volume_in_m3": 132, "surf_area_in_m2": 158, "light_type": "Incand", "glass_type": "no_sunlight"},
+            "room 1": {"volume_in_m3": 10, "surf_area_in_m2": 29.7, "light_type": "Incand", "glass_type": "glass_C"},
+            "room 2": {"volume_in_m3": 37.5, "surf_area_in_m2": 81, "light_type": "LED", "glass_type": "no_sunlight"},
+            "room 3": {"volume_in_m3": 32.4, "surf_area_in_m2": 61.8, "light_type": "UFT", "glass_type": "low_emissivity"},
+            "room 4": {"volume_in_m3": 40.5, "surf_area_in_m2": 81.3, "light_type": "CFT", "glass_type": "low_emissivity_film"},
+            "room 5": {"volume_in_m3": 24.5, "surf_area_in_m2": 51.1, "light_type": "FT", "glass_type": "no_sunlight"},
+            "room 6": {"volume_in_m3": 31.6, "surf_area_in_m2": 98.3, "light_type": "CFL", "glass_type": "low_emissivity"},
+            "room 7": {"volume_in_m3": 22.5, "surf_area_in_m2": 48, "light_type": "Incand", "glass_type": "low_emissivity_film"},
+            "room 8": {"volume_in_m3": 50.4, "surf_area_in_m2": 86.4, "light_type": "UFT", "glass_type": "glass_C"},
+            "room 9": {"volume_in_m3": 132, "surf_area_in_m2": 158, "light_type": "Incand", "glass_type": "no_sunlight"},
         }
 
         for room_num, expected in expected_data.items():
             with self.subTest(room=room_num):
                 room = self.rooms[room_num]
-
-                # Check basic attributes
                 self.assertEqual(room.volume_in_m3, expected["volume_in_m3"])
                 self.assertAlmostEqual(room.surf_area_in_m2, expected["surf_area_in_m2"])
                 self.assertEqual(room.light_type, expected["light_type"])
                 self.assertEqual(room.glass_type, expected["glass_type"])
 
     def test_populate_emissions(self):
-        for room in self.rooms.values():
-            populate_room_with_emissions_file(room, "config_rooms/csv/mr_room_emis_params_1.csv")
+            room = self.rooms["room 1"]
             self.assertTrue(hasattr(room, 'emissions'))
             self.assertEqual(len(room.emissions), 2)
             self.assertTrue("LIMONENE" in room.emissions)
@@ -101,24 +100,31 @@ class TestRoomPopulationIntegration(unittest.TestCase):
 
     def test_populate_tvar(self):
         for room in self.rooms.values():
-            populate_room_with_tvar_file(room, "config_rooms/csv/mr_tvar_room_params_1.csv")
             self.assertIsInstance(room.temp_in_kelvin, TimeDependentValue)
-            self.assertEqual(len(room.temp_in_kelvin.times()), 24 )
             self.assertIsInstance(room.rh_in_percent, TimeDependentValue)
-            self.assertEqual(len(room.rh_in_percent.times()), 24 )
             self.assertIsInstance(room.airchange_in_per_second, TimeDependentValue)
-            self.assertEqual(len(room.airchange_in_per_second.times()), 24 )
             self.assertIsInstance(room.light_switch, TimeDependentValue)
-            self.assertEqual(len(room.light_switch.times()), 24 )
 
     def test_populate_expos(self):
         for room in self.rooms.values():
-            populate_room_with_expos_file(room, "config_rooms/csv/mr_tvar_expos_params_1.csv")
             self.assertIsInstance(room.n_adults, TimeDependentValue)
-            self.assertEqual(len(room.n_adults.times()), 24 )
             self.assertIsInstance(room.n_children, TimeDependentValue)
-            self.assertEqual(len(room.n_children.times()), 24 )
 
 
-if __name__ == '__main__':
-    unittest.main()
+class TestJSONReferencingRoomFiles(BaseTestJSON):
+    results = BuildingJSONParser.from_json_file("config_rooms/json/building.json")
+
+
+class TestJSONWithRoomFiles(BaseTestJSON):
+    rooms_files = {
+        "room 1": "config_rooms/json/room_1.json",
+        "room 2": "config_rooms/json/room_2.json",
+        "room 3": "config_rooms/json/room_3.json",
+        "room 4": "config_rooms/json/room_4.json",
+        "room 5": "config_rooms/json/room_5.json",
+        "room 6": "config_rooms/json/room_6.json",
+        "room 7": "config_rooms/json/room_7.json",
+        "room 8": "config_rooms/json/room_8.json",
+        "room 9": "config_rooms/json/room_9.json",
+    }
+    results = BuildingJSONParser.from_json_files("config_rooms/json/building.json", rooms_files)
