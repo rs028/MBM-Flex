@@ -8,7 +8,7 @@ _  _ ___  _  _    ____ _    ____ _  _
 
 # MBM-Flex
 
-(MultiBox-Flexible Model) is an indoor air quality model. It was developed as part of the **IAQ-EMS** project, a component of the [UK Clean Air Programme](https://www.ukcleanair.org/). The aim of MBM-Flex is to provide the community with a flexible tool to simulate and investigate indoor air quality and its health impacts.
+MultiBox-Flexible Model (MBM-Flex) is an indoor air quality model. It was developed as part of the **IAQ-EMS** project, a component of the [UK Clean Air Programme](https://www.ukcleanair.org/). The aim of MBM-Flex is to provide the community with a flexible tool to simulate and investigate indoor air quality and its health impacts.
 
 MBM-Flex is a Python-based multi-room box-model for indoor air chemistry and transport. It integrates chemical mechanisms, configurable room layouts, and simulation runners (CLI and simple UI), and includes tools for extracting and analysing outputs.
 
