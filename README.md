@@ -31,6 +31,7 @@ To do so, MBM-Flex runs separate instances of INCHEM-Py for each per-room chemis
 + threadpoolctl
 + matplotlib
 + multiprocess
++ pyjson5
 
 **Acquire inchempy**
 
@@ -83,14 +84,19 @@ This suite runs many unit tests of the chemistry and could take many minutes.
 ## Configuring the simulation
 
 All settings are defined or referenced in `run_mbm.py`.
-You can edit this file to change global settings, or reference a different folder for the building configuration.
+You can edit this file to change global settings. 
+You can select a different building configuration by changing the line 
+`input_data = BuildingJSONParser.from_json_file("config_rooms/building.json")`
+.
 
-Alternatively you can change the building configuration in place by editing the JSON files in `config_rooms/`.
+Alternatively you can change the building configuration **in place** by editing the JSON files in `config_rooms/`.
 
 - [config_rooms/building.json](config_rooms/building.json)
 - [config_rooms/room_1.json](config_rooms/room_1.json)
 
-The configuration files reference initial concentrations from files such as [initial_concentrations.txt](initial_concentrations.txt).
+You can get assistance to generate and edit json configuration files using the [UI](UI/README.md).
+
+The configuration files reference initial concentrations from files such as [config_chem/initial_concentrations.txt](config_chem/initial_concentrations.txt).
 
 **Overview of `config_rooms` JSON files**
 
@@ -121,7 +127,6 @@ Chemical mechanism files (FAC format) live in `chem_mech/`; one is selected in t
 Example files:
 
 - [chem_mech/mcm_v331.fac](chem_mech/mcm_v331.fac)
-- [inchempy/mcm_v331.fac](inchempy/mcm_v331.fac)
 
 These are used by the chemistry modules  of inchempy for building reaction systems.
 For details about `fac` files see the [INCHEM-Py](https://github.com/DrDaveShaw/INCHEM-Py/) documentation.
@@ -133,10 +138,8 @@ For details about `fac` files see the [INCHEM-Py](https://github.com/DrDaveShaw/
 - **`chem_mech/`**: Chemical mechanism files (FAC format) used by the chemistry engine.
 - **`inchempy/`**: This is an empty folder; choose a (compatible) version of inchempy and paste it here before running.
 - **`config_rooms/`**: Building and room JSON configurations (`building.json`, `room_*.json`).
+- **`config_chem /`**: Initial concentation files (`initial_concentrations.txt`).
 - **`model_tools/`**: R scripts and plotting utilities for downstream analysis.
-
-
-
 
 
 ## License
