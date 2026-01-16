@@ -32,7 +32,7 @@ To do so, MBM-Flex runs separate instances of INCHEM-Py for each per-room chemis
 + matplotlib
 + multiprocess
 
-**Aquire inchempy**
+**Acquire inchempy**
 
 Initially the `inchempy/` folder is empty. A complete version of [INCHEM-Py](https://github.com/DrDaveShaw/INCHEM-Py/) needs to be downloaded and copied into this folder.
 
