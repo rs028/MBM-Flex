@@ -68,7 +68,7 @@ You can also view results after running a simulation.
 
 ```bash
 pip install pytest
-pytest -q
+python -m pytest multiroom_model_tests
 ```
 
 This suite runs many unit tests of the chemistry and could take many minutes.
