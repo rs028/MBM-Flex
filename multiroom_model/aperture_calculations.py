@@ -124,9 +124,9 @@ def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_de
     # advection flow (in m3/s)
     adv_flow = flow_coeff * math.sqrt(2/air_density) * (delta_P**flow_m)
 
-    print('|-------> delta_P = ', delta_P)
-    print('|-------> flow_coeff = ', flow_coeff)
-    print('|-------> adv_flow = ', adv_flow)
+    #print('|-------> delta_P = ', delta_P)
+    #print('|-------> flow_coeff = ', flow_coeff)
+    #print('|-------> adv_flow = ', adv_flow)
 
     return adv_flow
 
@@ -248,13 +248,14 @@ class ApertureCalculation:
             aperture_reversed_sign = -1 if contribution.reversed else 1
             flow_advection_sign = path_wind_direction_sign*aperture_reversed_sign
 
-            discharge_coefficient = 0.7/(1.0 + position)
+            # the discharge coefficient (Cd) has a constant value of 0.6-0.7
+            discharge_coefficient = 0.65
 
             flow_advection_magnitude = flow_advection(path_windspeed,
-                                  self.aperture.area,
-                                  discharge_coefficient,
-                                  self.building_pressure_coefficients,
-                                  self.air_density)
+                                                      self.aperture.area,
+                                                      discharge_coefficient,
+                                                      self.building_pressure_coefficients,
+                                                      self.air_density)
 
             sum += flow_advection_sign * flow_advection_magnitude
 
