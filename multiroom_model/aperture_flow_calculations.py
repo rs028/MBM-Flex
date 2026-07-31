@@ -129,20 +129,21 @@ class ApertureFlowCalculator:
 
         # indoor variables that cannot be transported
         in_patterns = [
-            re.compile(r'.+SURF$'),  # concentrations on surfaces
-            re.compile(r'^J\d+'),    # photolysis rates
-            re.compile(r'^YIELD.+'),  # yields from materials
-            re.compile(r'^AV.+'),    # surface/volume ratios
-            re.compile(r'^vd.+'),    # deposition velocities
-            re.compile(r'^r\d+')     # reaction rates
+            re.compile(r'.+SURF$'),     # concentrations on surfaces
+            re.compile(r'^J\d+'),       # photolysis rates
+            re.compile(r'^YIELD.+'),    # yields from materials
+            re.compile(r'^AV.+'),       # surface/volume ratios
+            re.compile(r'^vd.+'),       # deposition velocities
+            re.compile(r'^r\d+'),       # reaction rates
+            re.compile(r'^EMISSION.+')  # emission rates
         ]
 
         # outdoor variables
         out_pattern = re.compile(r'.*OUT$')
 
         # constants, rate coefficients, and other variables
-        reserved_list = ['ACRate', 'cosx', 'secx', 'M', 'temp', 'H2O', 'PI', 'AV', 'adults', 'children', 'O2', 'N2', 'H2', 'saero',
-                         'OH_reactivity', 'OH_production', 'KDI', 'K8I', 'FC9', 'NC13', 'NCD', 'FC12', 'KMT14', 'CNO3', 'KMT05',
+        reserved_list = ['ACRate', 'cosx', 'secx', 'M', 'temp', 'H2O', 'PI', 'AV', 'adults', 'children', 'O2', 'N2', 'H2', 'volume',
+                         'saero', 'OH_reactivity', 'OH_production', 'KDI', 'K8I', 'FC9', 'NC13', 'NCD', 'FC12', 'KMT14', 'CNO3', 'KMT05',
                          'F17', 'K140', 'KFPAN', 'KPPNI', 'K20', 'KMT06', 'KCH3O2', 'K7I', 'NC14', 'NCPPN', 'F3', 'K10I', 'KRD',
                          'KR10', 'NC1', 'K3I', 'NC17', 'K12I', 'NC4', 'K14I', 'K150', 'K200', 'F20', 'KMT16', 'K160', 'F19', 'KR7',
                          'FC2', 'F16', 'N19', 'KR3', 'KMT20', 'KHOCL', 'F13', 'KC0', 'KMT04', 'KRPPN', 'F9', 'K130', 'KMT10', 'KR19',

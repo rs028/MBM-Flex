@@ -17,4 +17,4 @@ module load numba/0.58.1-foss-2023a
 module load multiprocess/0.70.15-gfbf-2023a
 module load JupyterLab/4.0.5-GCCcore-12
 
-python run_mbm_parallel.py
+python run_mbm.py
