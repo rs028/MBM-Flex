@@ -30,6 +30,7 @@ def transport_path_contains_room(room: Room, transport_path: TransportPath):
     """
     Detect whether a room is included in the transport path
     """
+
     for t in transport_path.route:
         if (t.aperture.origin is room or t.aperture.destination is room):
             return True
@@ -40,6 +41,7 @@ def is_room_cross_ventilated(room: Room, transport_paths: List[TransportPath], w
     """
     Detect whether a room receives cross-ventilation from any transport path, given wind conditions
     """
+
     for t in transport_paths:
         if transport_path_contains_room(room, t):
             if (abs(transport_path_windspeed(t, wind_speed, wind_direction, building_direction_in_radians)) > _zero_advection_tolerance):
@@ -51,6 +53,7 @@ def room_has_outdoor_aperture(room: Room, apertures: List[Aperture]):
     """
     Detect whether a room has any apertures to the outdoors
     """
+
     return any((a.origin == room and type(a.destination) is Side for a in apertures))
 
 
@@ -59,6 +62,7 @@ def transport_path_angle_in_radians(transport_path: TransportPath, building_dire
     Find the angle of a given transport path, and a given building direction
     if the building direction is 0, then a back->front path will be north and this method will return 0
     """
+
     offsets = {
         (Side.Front, Side.Back): math.pi,
         (Side.Front, Side.Left): -3.0*math.pi / 4,
@@ -109,6 +113,7 @@ def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_de
     returns:
         adv_flow = advection flow (m3/s)
     '''
+
     # turbulent flow exponent
     flow_m = 0.5
 
@@ -126,20 +131,21 @@ def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_de
     return adv_flow
 
 
-def flow_exchange(category: int): #, oarea: float):
+def flow_exchange(category: int, adjacent_throughflow: float):
     '''
-    Calculate the exchange flow through an opening (door or window)
+    Calculate the exchange flow through an opening (door or window) which
+    has no advection flow. The calculation depends on the category of the
+    aperture, defined in exchange_category()
 
     inputs:
-        category = 
-        oarea = cross section area of the aperture (m2)
-
-    returns:
-        exch_flow = exchange flow (m3/s)
+        category = exchange category of the aperture
+        adjacent_throughflow = through-flow (m3/s) of the adjacent room
     '''
-    # TODO: this needs some calculation or something
     if category == 1:
-        return 0
+        # the exchange flow is a fraction of the advection airflow in the
+        # adjacent room
+        _exchange_fraction = 0.025
+        return _exchange_fraction * adjacent_throughflow
     elif category == 2:
         return 0
     elif category == 3:
@@ -149,6 +155,7 @@ def flow_exchange(category: int): #, oarea: float):
     else:
         raise Exception("unknown category")
 
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 @dataclass
 class Fluxes:
@@ -158,12 +165,13 @@ class Fluxes:
     from_1_to_2: float
     from_2_to_1: float
 
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 class ApertureCalculation:
     """
         @brief A class which performs the calculations of advection flow, category and exchange flow of an aperture
-
     """
+
     @dataclass
     class Contribution:
         """
@@ -185,6 +193,7 @@ class ApertureCalculation:
     building_pressure_coefficients: Tuple[float, float] = 0, 0
     contributions: List[Contribution] = []
 
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++
     def __init__(self,
                  aperture: Aperture,
                  transport_paths: List[TransportPath],
@@ -205,10 +214,11 @@ class ApertureCalculation:
         if (building_pressure_coefficients[0] < building_pressure_coefficients[1]):
             raise Exception("The higher building pressure coefficient should come first")
 
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++
     @classmethod
     def _build_contributions(cls, aperture: Aperture, transport_paths: List[TransportPath]) -> List[Contribution]:
         """
-        Each transport path may give a contribution to the flow through this aperture
+        each transport path may give a contribution to the flow through this aperture
         """
         result = []
         for tp in transport_paths:
@@ -225,6 +235,7 @@ class ApertureCalculation:
                     ))
         return result
 
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++
     def has_advection_flow(self, wind_speed: float, wind_direction: float):
         """
         detect whether given wind conditions cause any advection flow
@@ -236,6 +247,7 @@ class ApertureCalculation:
                 return True
         return False
 
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++
     def advection_flow_rate(self, wind_speed: float, wind_direction: float):
         """
         calculate the advection flow resulting from the pressure differential
@@ -254,8 +266,8 @@ class ApertureCalculation:
             aperture_reversed_sign = -1 if contribution.reversed else 1
             flow_advection_sign = path_wind_direction_sign*aperture_reversed_sign
 
-            # the discharge coefficient (Cd) has a constant value of 0.6-0.7
-            discharge_coefficient = 0.65
+            # the discharge coefficient (Cd) has a constant value of about 0.6-0.7
+            discharge_coefficient = 0.7
 
             flow_advection_magnitude = flow_advection(path_windspeed,
                                                       self.aperture.area,
@@ -267,6 +279,7 @@ class ApertureCalculation:
 
         return sum
 
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++
     def exchange_category(self, wind_speed: float, wind_direction: float):
         """
         the exchange category resulting from given wind conditions
@@ -295,19 +308,23 @@ class ApertureCalculation:
         else:
             return 4
 
-    def exchange_flow_rate(self, wind_speed: float, wind_direction: float): #, oarea: float):
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def exchange_flow_rate(self, wind_speed: float, wind_direction: float, adjacent_throughflow: float):
         """
-        calculate the exchange flow resulting from molecular diffusion
+        calculate the exchange flow resulting from diffusion and turbulent exchange
         and advection --> see flow_exchange()
         """
         category = self.exchange_category(wind_speed, wind_direction)
-        return flow_exchange(category)
+        return flow_exchange(category, adjacent_throughflow)
 
-    def trans_matrix_contributions(self, wind_speed: float, wind_direction_in_radians: float):
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def trans_matrix_contributions(self, wind_speed: float, wind_direction_in_radians: float, adjacent_throughflow: float):
         """
         main function to determine air flows through each aperture:
-        - advection flows are determined by ambient wind pressure --> see advection_flow_rate()
-        - exchange flows are determined by molecular diffusion and advection --> see exchange_flow_rate()
+         - advection flows are determined by ambient wind pressure
+           |==> advection_flow_rate() ==> flow_advection()
+         - exchange flows are determined by diffusion and turbulent exchange
+           |==> exchange_flow_rate() ==> flow_exchange()
         """
 
         advection = self.advection_flow_rate(wind_speed, wind_direction_in_radians)
@@ -329,7 +346,7 @@ class ApertureCalculation:
 
         else:
             # No Advection flow, use Exchange flow instead
-            exchange = self.exchange_flow_rate(wind_speed, wind_direction_in_radians)
+            exchange = self.exchange_flow_rate(wind_speed, wind_direction_in_radians, adjacent_throughflow)
 
             # Exchange flows are symmetrical
             return Fluxes(

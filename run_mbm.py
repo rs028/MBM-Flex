@@ -29,7 +29,6 @@
 import os, shutil
 import math
 import pickle
-from shutil import copyfile
 from datetime import datetime
 from typing import Dict, List
 from multiroom_model.global_settings import GlobalSettings
@@ -76,9 +75,9 @@ if __name__ == '__main__':
     # - start_time: starting time of the simulation (0 is midnight)
     # - total_time: total duration of the simulation
     # - transport_interval: how often inter-room transport is applied
-    start_time=0
-    total_time=20
-    transport_interval=6
+    start_time=21600
+    total_time=7200
+    transport_interval=5
 
     # Name of the folder where the model results will be saved. The folder name
     # will be automatically prefixed with the date and time of the simulation.
@@ -87,6 +86,11 @@ if __name__ == '__main__':
     # ############################################################################ #
     # DO NOT CHANGE THE CODE BELOW                                                 #
     # ############################################################################ #
+
+    # Create output directory and save settings script for future reference
+    mbm_output_dir = ('%s_%s' % (datetime.now().strftime('%y%m%d_%H%M%S'), mbm_output))
+    os.mkdir('%s/%s' % (os.getcwd(), mbm_output_dir))
+    shutil.copy('run_mbm.py', mbm_output_dir)
 
     # Read the json file for each room and extract all the data we need from it
     input_data = BuildingJSONParser.from_json_file("config_rooms/building.json")
@@ -111,6 +115,11 @@ if __name__ == '__main__':
         apertures=apertures,
         wind_definition=wind_definition)
 
+    # DIAGNOSTIC: print apertures that are not on a transport path
+    for calc, origin_i, dest_i, _, _ in simulation._aperture_calculators:
+        if not calc.contributions:
+            print(origin_i, dest_i)
+
     # An initial conditions text file for each room
     initial_conditions = input_data['initial_conditions']
 
@@ -126,8 +135,4 @@ if __name__ == '__main__':
     results_dictionary = dict((key, result[r]) for key, r in rooms_dictionary.items())
 
     # Save results to pickle file
-    mbm_output_dir = ('%s_%s' % (datetime.now().strftime('%y%m%d_%H%M%S'), mbm_output))
-    os.mkdir('%s/%s' % (os.getcwd(), mbm_output_dir))
     pickle.dump(results_dictionary, open('%s/mbm_results.pkl' % mbm_output_dir, "wb"))
-    # Save the global settings script for reference
-    shutil.copy('run_mbm.py', mbm_output_dir)
