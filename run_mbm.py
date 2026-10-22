@@ -29,6 +29,8 @@
 import os, shutil
 import math
 import pickle
+import numpy as np
+import pandas as pd
 from datetime import datetime
 from typing import Dict, List
 from multiroom_model.global_settings import GlobalSettings
@@ -40,10 +42,10 @@ from multiroom_model.json_parser import BuildingJSONParser
 if __name__ == '__main__':
 
     # ambient pressure (mbar) is assumed to be constant, and is the same in all rooms
-    ambient_press = 1013.0
+    ambient_press = 1004.12
 
     # ambient temperature (K) is assumed to be constant
-    ambient_temp = 293.0
+    ambient_temp = 278.25
 
     # ambient air density (assuming dry air), in kg/m3
     rho = (100*ambient_press) / (287.050 * ambient_temp)
@@ -61,7 +63,7 @@ if __name__ == '__main__':
         custom_filename=None,
         diurnal=True,
         city='London_urban',
-        date='21-06-2020',
+        date='01-01-2026',
         lat=45.4,
         path=None,
         reactions_output=False,
@@ -75,9 +77,9 @@ if __name__ == '__main__':
     # - start_time: starting time of the simulation (0 is midnight)
     # - total_time: total duration of the simulation
     # - transport_interval: how often inter-room transport is applied
-    start_time=21600
-    total_time=7200
-    transport_interval=5
+    start_time = 21600
+    total_time = 43200
+    transport_interval = 5
 
     # Name of the folder where the model results will be saved. The folder name
     # will be automatically prefixed with the date and time of the simulation.
@@ -115,10 +117,37 @@ if __name__ == '__main__':
         apertures=apertures,
         wind_definition=wind_definition)
 
-    # DIAGNOSTIC: print apertures that are not on a transport path
+    # ==================== DIAGNOSTIC BLOCK ==================== #
+    # instructions in this block are only for diagnostics and testing of
+    # airflows, and can be commented out during production runs
+
+    # identify the room with the worst airflow turnover to determine the optimal
+    # transport_interval
+    volumes = np.array([r.volume_in_m3 for r in rooms])
+    worst_turnover = 0.0
+    # at each timestep calculates the sum of air leaving each room normalized to
+    # the room volume, then finds the room with the highest (worst) turnover
+    for tf in range(start_time, start_time + total_time + 1, 60):
+        turnover = simulation.trans_matrix(tf)[1:].sum(axis=1) / volumes
+        worst_turnover = max(worst_turnover, turnover.max())
+    if worst_turnover > 0:
+        print(f"\n[*] Transport_interval should be below {1/worst_turnover:.1f} s")
+
+    # print airflows at given time
+    tf = 25200
+    names = ['Outdoors'] + list(rooms_dictionary.keys())
+    flows_at_t = pd.DataFrame(simulation.trans_matrix(tf), index=names, columns=names)
+    print(f'\n[*] Flows at t = {tf} s (m3/s)')
+    print(flows_at_t.to_string(float_format="{:.3e}".format))
+    #flows_at_t.to_csv(f'{mbm_output_dir}/flows_{tf}.csv')
+
+    # list apertures that are not on a transport path
+    print("\n[*] Apertures with no advective flow:")
     for calc, origin_i, dest_i, _, _ in simulation._aperture_calculators:
         if not calc.contributions:
-            print(origin_i, dest_i)
+            print(f"{origin_i} -> {dest_i}")
+
+    # ========================================================== #
 
     # An initial conditions text file for each room
     initial_conditions = input_data['initial_conditions']

@@ -344,10 +344,6 @@ class Simulation:
         adjacent = Simulation._adjacent_throughflow(room_throughflows, origin_index, destination_index)
         flux = aperture_calculator.trans_matrix_contributions(wind_speed, wind_direction, adjacent)
 
-        # print debugging flows info
-        #if(origin_index==0 and destination_index==1):
-        print('FLOW:', origin_index+1, '-->', (destination_index+1 if destination_index is not None else "Outdoor"), '=', flux)
-
         # build a flow calculator
         calculator = ApertureFlowCalculator(room_results[origin_index].columns)
 
