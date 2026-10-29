@@ -91,15 +91,18 @@ def transport_path_windspeed(transport_path: TransportPath,
                              wind_direction: float,
                              building_direction_in_radians: float):
     """
-    Use windspeed data to find the component of the windspeed along a given transport path
+    Use windspeed data to find the component of the windspeed along a given
+    transport path. Positive values indicate that the wind component is along the
+    path direction. Wind direction indicates where the wind comes FROM
+    (as per meteorological convention).
     """
 
     t_p_angle = transport_path_angle_in_radians(transport_path, building_direction_in_radians)
-    return wind_speed * math.cos(wind_direction-t_p_angle)
+    return -wind_speed * math.cos(wind_direction - t_p_angle)
 
 
 def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_density: float):
-    '''
+    """
     Calculate the advection flow through an opening (door or window), given its area
     and the component of ambient wind passing through it.
 
@@ -112,7 +115,7 @@ def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_de
 
     returns:
         adv_flow = advection flow (m3/s)
-    '''
+    """
 
     # turbulent flow exponent
     flow_m = 0.5
@@ -132,7 +135,7 @@ def flow_advection(io_windspd: float, oarea: float, Cd: float, Cp: float, air_de
 
 
 def flow_exchange(category: int, adjacent_throughflow: float):
-    '''
+    """
     Calculate the exchange flow through an opening (door or window) which
     has no advection flow. The calculation depends on the category of the
     aperture, defined in exchange_category()
@@ -140,7 +143,7 @@ def flow_exchange(category: int, adjacent_throughflow: float):
     inputs:
         category = exchange category of the aperture
         adjacent_throughflow = through-flow (m3/s) of the adjacent room
-    '''
+    """
     if category == 1:
         # the exchange flow is a fraction of the advection airflow in the
         # adjacent room
@@ -267,7 +270,7 @@ class ApertureCalculation:
             flow_advection_sign = path_wind_direction_sign*aperture_reversed_sign
 
             # the discharge coefficient (Cd) has a constant value of about 0.6-0.7
-            discharge_coefficient = 0.7
+            discharge_coefficient = 0.6
 
             flow_advection_magnitude = flow_advection(path_windspeed,
                                                       self.aperture.area,
