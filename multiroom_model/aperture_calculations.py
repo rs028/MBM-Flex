@@ -23,6 +23,9 @@ import math
 
 Room = TypeVar('Room')
 
+# threshold for wind component (m/s)
+_zero_wind_tolerance: float = 1.0e-5
+# threshold for advection flow (m3/s)
 _zero_advection_tolerance: float = 1.0e-5
 
 
@@ -44,7 +47,7 @@ def is_room_cross_ventilated(room: Room, transport_paths: List[TransportPath], w
 
     for t in transport_paths:
         if transport_path_contains_room(room, t):
-            if (abs(transport_path_windspeed(t, wind_speed, wind_direction, building_direction_in_radians)) > _zero_advection_tolerance):
+            if (abs(transport_path_windspeed(t, wind_speed, wind_direction, building_direction_in_radians)) > _zero_wind_tolerance):
                 return True
     return False
 
@@ -246,7 +249,7 @@ class ApertureCalculation:
         for contribution in self.contributions:
             value = transport_path_windspeed(contribution.path, wind_speed,
                                              wind_direction, self.building_direction_in_radians)
-            if abs(value) > _zero_advection_tolerance:
+            if abs(value) > _zero_wind_tolerance:
                 return True
         return False
 
@@ -256,7 +259,7 @@ class ApertureCalculation:
         calculate the advection flow resulting from the pressure differential
         caused by ambient wind --> see flow_advection()
         """
-        sum = 0
+        sum_flow = 0
         for contribution in self.contributions:
             path_windspeed = transport_path_windspeed(contribution.path,
                                                       wind_speed,
@@ -278,9 +281,9 @@ class ApertureCalculation:
                                                       self.building_pressure_coefficients,
                                                       self.air_density)
 
-            sum += flow_advection_sign * flow_advection_magnitude
+            sum_flow += flow_advection_sign * flow_advection_magnitude
 
-        return sum
+        return sum_flow
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++
     def exchange_category(self, wind_speed: float, wind_direction: float):
